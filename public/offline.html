@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="tr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#0284C7" />
+    <title>Bağlantı Yok | Bilad Portal</title>
+    <style>
+      :root {
+        color-scheme: light;
+        font-family: Arial, Helvetica, sans-serif;
+        background: #f6f9ff;
+        color: #0f172a;
+      }
+
+      body {
+        align-items: center;
+        display: flex;
+        justify-content: center;
+        margin: 0;
+        min-height: 100vh;
+        padding: 24px;
+      }
+
+      main {
+        background: #ffffff;
+        border: 1px solid #e6eef9;
+        border-radius: 24px;
+        box-shadow: 0 18px 48px rgba(15, 23, 42, 0.08);
+        max-width: 420px;
+        padding: 32px;
+        text-align: center;
+      }
+
+      img {
+        height: 72px;
+        margin-bottom: 18px;
+        object-fit: contain;
+        width: auto;
+      }
+
+      h1 {
+        font-size: 24px;
+        line-height: 1.2;
+        margin: 0;
+      }
+
+      p {
+        color: #64748b;
+        font-size: 15px;
+        line-height: 1.6;
+        margin: 14px 0 0;
+      }
+
+      button {
+        background: #0284c7;
+        border: 0;
+        border-radius: 14px;
+        color: #ffffff;
+        cursor: pointer;
+        font-size: 15px;
+        font-weight: 700;
+        margin-top: 24px;
+        padding: 12px 18px;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <img src="/logo.png" alt="Bilad" />
+      <h1>Bağlantı yok</h1>
+      <p>
+        Bilad Portal işlemleri için internet bağlantısı gerekir. Bağlantınız
+        geri geldiğinde sayfayı yenileyin.
+      </p>
+      <button type="button" onclick="window.location.reload()">Yenile</button>
+    </main>
+  </body>
+</html>
