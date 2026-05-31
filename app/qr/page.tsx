@@ -70,8 +70,8 @@ export default function QRPage() {
     <div className="flex min-h-screen bg-[#F6F9FF]">
       <Sidebar />
 
-      <main className="flex-1 px-4 py-4 md:p-8">
-        <div className="mx-auto flex min-h-[calc(100vh-32px)] max-w-7xl flex-col">
+      <main className="min-w-0 flex-1 px-4 py-4 md:p-8">
+        <div className="mx-auto flex min-h-[calc(100vh-32px)] max-w-7xl min-w-0 flex-col">
           <header className="mb-5 md:mb-8">
             <div className="flex h-14 items-center justify-between md:h-16">
               <div className="h-11 w-11 md:hidden" />
@@ -110,10 +110,11 @@ export default function QRPage() {
                 </div>
               ) : qrData ? (
                 <>
-                  <div className="mx-auto flex w-fit justify-center rounded-2xl border border-[#E6EEF9] bg-[#F8FBFF] p-5 md:p-6">
+                  <div className="mx-auto flex w-full max-w-[320px] justify-center rounded-2xl border border-[#E6EEF9] bg-[#F8FBFF] p-4 sm:p-5 md:p-6">
                     <QRCodeSVG
                       value={`${FRONTEND_URL}/qr-scan?token=${qrData.token}`}
                       size={280}
+                      className="h-auto w-full max-w-full"
                     />
                   </div>
 
