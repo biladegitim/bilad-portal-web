@@ -1,6 +1,6 @@
 {
   "name": "Bilad Portal",
-  "short_name": "Bilad",
+  "short_name": "Bilad Portal",
   "description": "Bilad Portal kurum içi yönetim sistemi",
   "start_url": "/",
   "scope": "/",
