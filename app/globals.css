@@ -73,16 +73,6 @@ textarea {
   font-size: 16px;
 }
 
-#qr-reader,
-#qr-reader * {
-  max-width: 100% !important;
-}
-
-#qr-reader video,
-#qr-reader canvas {
-  display: block !important;
-}
-
 @media (min-width: 768px) {
   .card {
     border-radius: 28px;

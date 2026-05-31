@@ -292,8 +292,8 @@ export default function QRScanPage() {
     <div className="flex min-h-screen bg-[#F6F9FF]">
       <Sidebar />
 
-      <main className="flex-1 px-4 py-4 md:p-8">
-        <div className="mx-auto flex min-h-[calc(100vh-32px)] max-w-7xl flex-col">
+      <main className="min-w-0 flex-1 px-4 py-4 md:p-8">
+        <div className="mx-auto flex min-h-[calc(100vh-32px)] max-w-7xl min-w-0 flex-col">
           <header className="mb-4 md:mb-8">
             <div className="flex h-14 items-center justify-between md:h-16">
               <div className="h-11 w-11 md:hidden" />
@@ -334,15 +334,19 @@ export default function QRScanPage() {
                     <div
                       id="qr-reader"
                       className="
-                        min-h-[320px]
+                        aspect-square
+                        min-h-[280px]
                         w-full
                         overflow-hidden
                         bg-black
                         [&_*]:!box-border
                         [&_button]:hidden
+                        [&_canvas]:!max-w-full
+                        [&_canvas]:!w-full
                         [&_select]:hidden
                         [&_span]:hidden
-                        [&_video]:!h-[320px]
+                        [&_video]:!h-full
+                        [&_video]:!max-w-full
                         [&_video]:!w-full
                         [&_video]:!object-cover
                       "
