@@ -66,7 +66,7 @@ export default function RoomsPage() {
   const [description, setDescription] = useState("");
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
-  const [weekday, setWeekday] = useState("0");
+  const [selectedWeekdays, setSelectedWeekdays] = useState<string[]>(["0"]);
   const [startTime, setStartTime] = useState("");
   const [endTime, setEndTime] = useState("");
 
@@ -159,7 +159,7 @@ export default function RoomsPage() {
     setDescription("");
     setStartDate("");
     setEndDate("");
-    setWeekday("0");
+    setSelectedWeekdays(["0"]);
     setStartTime("");
     setEndTime("");
   }
@@ -171,13 +171,18 @@ export default function RoomsPage() {
     setDescription(reservation.description || "");
     setStartDate(reservation.start_date);
     setEndDate(reservation.end_date);
-    setWeekday(String(reservation.weekday));
+    setSelectedWeekdays([String(reservation.weekday)]);
     setStartTime(reservation.start_time.slice(0, 5));
     setEndTime(reservation.end_time.slice(0, 5));
   }
 
   async function handleReservationSubmit(e: React.FormEvent) {
     e.preventDefault();
+
+    if (selectedWeekdays.length === 0) {
+      alert("En az bir gün seçmelisiniz.");
+      return;
+    }
 
     const response = await apiFetch(
       editingId
@@ -192,7 +197,9 @@ export default function RoomsPage() {
           description,
           start_date: startDate,
           end_date: endDate,
-          weekday: Number(weekday),
+          ...(editingId
+            ? { weekday: Number(selectedWeekdays[0]) }
+            : { weekdays: selectedWeekdays.map(Number) }),
           start_time: `${startTime}:00`,
           end_time: `${endTime}:00`,
         }),
@@ -230,6 +237,18 @@ export default function RoomsPage() {
       day: "numeric",
       month: "long",
       year: "numeric",
+    });
+  }
+
+  function toggleWeekday(value: string) {
+    setSelectedWeekdays((current) => {
+      if (editingId) return [value];
+
+      if (current.includes(value)) {
+        return current.filter((day) => day !== value);
+      }
+
+      return [...current, value].sort((a, b) => Number(a) - Number(b));
     });
   }
 
@@ -397,19 +416,17 @@ export default function RoomsPage() {
                         required
                       />
 
-                      <Select
-                        value={weekday}
-                        setValue={setWeekday}
-                        options={weekdays.map((day) => ({
-                          value: String(day.value),
-                          label: day.label,
-                        }))}
+                      <WeekdayPicker
+                        selectedValues={selectedWeekdays}
+                        onToggle={toggleWeekday}
+                        singleSelect={editingId !== null}
                       />
 
                       <DateInput
                         type="date"
                         value={startDate}
                         setValue={setStartDate}
+                        placeholder="Başlangıç tarihini giriniz"
                         required
                       />
 
@@ -417,6 +434,7 @@ export default function RoomsPage() {
                         type="date"
                         value={endDate}
                         setValue={setEndDate}
+                        placeholder="Bitiş tarihini giriniz"
                         required
                       />
 
@@ -430,6 +448,7 @@ export default function RoomsPage() {
                         type="time"
                         value={startTime}
                         setValue={setStartTime}
+                        placeholder="Başlangıç saatini giriniz"
                         required
                       />
 
@@ -437,6 +456,7 @@ export default function RoomsPage() {
                         type="time"
                         value={endTime}
                         setValue={setEndTime}
+                        placeholder="Bitiş saatini giriniz"
                         required
                       />
                     </div>
@@ -645,24 +665,84 @@ function Select({
   );
 }
 
+function WeekdayPicker({
+  selectedValues,
+  onToggle,
+  singleSelect,
+}: {
+  selectedValues: string[];
+  onToggle: (value: string) => void;
+  singleSelect: boolean;
+}) {
+  return (
+    <fieldset className="rounded-2xl border border-[#E6EEF9] bg-[#F8FBFF] p-3 lg:col-span-3">
+      <legend className="px-1 text-sm font-semibold text-slate-700">
+        Gün seçiniz
+      </legend>
+
+      <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-4 lg:grid-cols-7">
+        {weekdays.map((day) => {
+          const value = String(day.value);
+          const selected = selectedValues.includes(value);
+
+          return (
+            <button
+              key={value}
+              type="button"
+              onClick={() => onToggle(value)}
+              aria-pressed={selected}
+              className={`h-10 rounded-2xl border px-3 text-xs font-semibold transition sm:text-sm ${
+                selected
+                  ? "border-sky-500 bg-sky-600 text-white shadow-sm"
+                  : "border-[#E6EEF9] bg-white text-slate-600 hover:bg-sky-50"
+              }`}
+            >
+              {day.label}
+            </button>
+          );
+        })}
+      </div>
+
+      <p className="mt-2 text-xs text-slate-400">
+        {singleSelect
+          ? "Düzenleme sırasında bir gün seçilebilir."
+          : "Birden fazla gün seçebilirsiniz."}
+      </p>
+    </fieldset>
+  );
+}
+
 function DateInput({
   type,
   value,
   setValue,
+  placeholder,
   required = false,
 }: {
   type: "date" | "time";
   value: string;
   setValue: (value: string) => void;
+  placeholder: string;
   required?: boolean;
 }) {
   return (
-    <input
-      type={type}
-      value={value}
-      onChange={(e) => setValue(e.target.value)}
-      required={required}
-      className="h-11 w-full rounded-2xl border border-[#E6EEF9] bg-[#F8FBFF] px-4 text-sm text-slate-700 outline-none transition focus:border-sky-400 focus:bg-white focus:ring-4 focus:ring-sky-100"
-    />
+    <label className="relative block h-11 w-full">
+      {!value && (
+        <span className="pointer-events-none absolute inset-y-0 left-4 z-10 flex items-center text-sm text-slate-400">
+          {placeholder}
+        </span>
+      )}
+
+      <input
+        type={type}
+        value={value}
+        onChange={(e) => setValue(e.target.value)}
+        required={required}
+        aria-label={placeholder}
+        className={`h-11 w-full appearance-none rounded-2xl border border-[#E6EEF9] bg-[#F8FBFF] px-4 text-left text-sm outline-none transition focus:border-sky-400 focus:bg-white focus:ring-4 focus:ring-sky-100 [&::-webkit-calendar-picker-indicator]:ml-auto [&::-webkit-date-and-time-value]:text-left ${
+          value ? "text-slate-700" : "text-transparent focus:text-slate-700"
+        }`}
+      />
+    </label>
   );
 }
