@@ -30,9 +30,9 @@ type Reservation = {
 
 const weekdays = [
   { value: 0, label: "Pazartesi" },
-  { value: 1, label: "SalÄ±" },
-  { value: 2, label: "Ã‡arÅŸamba" },
-  { value: 3, label: "PerÅŸembe" },
+  { value: 1, label: "Salı" },
+  { value: 2, label: "Çarşamba" },
+  { value: 3, label: "Perşembe" },
   { value: 4, label: "Cuma" },
   { value: 5, label: "Cumartesi" },
   { value: 6, label: "Pazar" },
@@ -40,9 +40,9 @@ const weekdays = [
 
 const dayNames = [
   "Pazartesi",
-  "SalÄ±",
-  "Ã‡arÅŸamba",
-  "PerÅŸembe",
+  "Salı",
+  "Çarşamba",
+  "Perşembe",
   "Cuma",
   "Cumartesi",
   "Pazar",
@@ -128,7 +128,7 @@ export default function RoomsPage() {
     );
 
     if (!response.ok) {
-      alert("Mekan iÅŸlemi baÅŸarÄ±sÄ±z");
+      alert("Mekan işlemi başarısız");
       return;
     }
 
@@ -180,7 +180,7 @@ export default function RoomsPage() {
     e.preventDefault();
 
     if (selectedWeekdays.length === 0) {
-      alert("En az bir gÃ¼n seÃ§melisiniz.");
+      alert("En az bir gün seçmelisiniz.");
       return;
     }
 
@@ -208,7 +208,7 @@ export default function RoomsPage() {
 
     if (!response.ok) {
       const data = await response.json();
-      alert(data.detail || "Ä°ÅŸlem baÅŸarÄ±sÄ±z");
+      alert(data.detail || "İşlem başarısız");
       return;
     }
 
@@ -265,27 +265,27 @@ export default function RoomsPage() {
 
             <div className="mt-5 md:mt-6">
               <h1 className="text-2xl font-bold tracking-tight text-slate-800 md:text-3xl">
-                Kat PlanÄ±
+                Kat Planı
               </h1>
 
               <p className="mt-1.5 text-sm text-slate-400 md:text-base">
-                MekanlarÄ± ve haftalÄ±k programlarÄ± yÃ¶netin.
+                Mekanları ve haftalık programları yönetin.
               </p>
             </div>
           </header>
 
           <div className="space-y-4 md:space-y-5">
             {loading ? (
-              <InfoBox>Kat planÄ± yÃ¼kleniyor...</InfoBox>
+              <InfoBox>Kat planı yükleniyor...</InfoBox>
             ) : (
               <>
                 {isSuperAdmin && (
                   <section className="rounded-2xl border border-[#E6EEF9] bg-white p-4 shadow-sm md:rounded-3xl md:p-5">
                     <div className="mb-4">
                       <SectionTitle
-                        icon="ğŸ¢"
-                        title={editingRoomId ? "Mekan DÃ¼zenle" : "Mekan YÃ¶netimi"}
-                        description="Kat planÄ±nda kullanÄ±lacak mekanlarÄ± oluÅŸturun."
+                        icon="🏢"
+                        title={editingRoomId ? "Mekan Düzenle" : "Mekan Yönetimi"}
+                        description="Kat planında kullanılacak mekanları oluşturun."
                       />
                     </div>
 
@@ -296,14 +296,14 @@ export default function RoomsPage() {
                       <Input
                         value={roomName}
                         setValue={setRoomName}
-                        placeholder="Mekan adÄ±"
+                        placeholder="Mekan adı"
                         required
                       />
 
                       <Input
                         value={roomDescription}
                         setValue={setRoomDescription}
-                        placeholder="AÃ§Ä±klama"
+                        placeholder="Açıklama"
                       />
 
                       <div className="flex flex-col gap-2 sm:flex-row">
@@ -311,7 +311,7 @@ export default function RoomsPage() {
                           type="submit"
                           className="h-11 rounded-2xl bg-sky-600 px-5 text-sm font-semibold text-white shadow-sm transition hover:bg-sky-700"
                         >
-                          {editingRoomId ? "GÃ¼ncelle" : "Mekan Ekle"}
+                          {editingRoomId ? "Güncelle" : "Mekan Ekle"}
                         </button>
 
                         {editingRoomId && (
@@ -320,7 +320,7 @@ export default function RoomsPage() {
                             onClick={resetRoomForm}
                             className="h-11 rounded-2xl border border-[#E6EEF9] bg-white px-5 text-sm font-semibold text-slate-600 transition hover:bg-slate-50"
                           >
-                            VazgeÃ§
+                            Vazgeç
                           </button>
                         )}
                       </div>
@@ -328,7 +328,7 @@ export default function RoomsPage() {
 
                     <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
                       {rooms.length === 0 ? (
-                        <InfoBox>HenÃ¼z mekan eklenmemiÅŸ.</InfoBox>
+                        <InfoBox>Henüz mekan eklenmemiş.</InfoBox>
                       ) : (
                         rooms.map((room) => (
                           <article
@@ -336,7 +336,7 @@ export default function RoomsPage() {
                             className="rounded-2xl border border-[#E6EEF9] bg-[#F8FBFF] p-4 transition hover:bg-white hover:shadow-sm"
                           >
                             <div className="mb-4 flex items-center gap-3">
-                              <span className="text-xl leading-none">ğŸ¢</span>
+                              <span className="text-xl leading-none">🏢</span>
 
                               <div className="min-w-0">
                                 <h3 className="truncate text-sm font-semibold text-slate-800 md:text-base">
@@ -350,7 +350,7 @@ export default function RoomsPage() {
                             </div>
 
                             <p className="line-clamp-2 min-h-[48px] text-sm leading-6 text-slate-600">
-                              {room.description || "AÃ§Ä±klama yok."}
+                              {room.description || "Açıklama yok."}
                             </p>
 
                             <div className="mt-4 grid grid-cols-2 gap-3">
@@ -358,7 +358,7 @@ export default function RoomsPage() {
                                 onClick={() => startEditRoom(room)}
                                 className="h-10 rounded-2xl border border-[#E6EEF9] bg-white text-sm font-semibold text-slate-600 transition hover:bg-slate-50"
                               >
-                                DÃ¼zenle
+                                Düzenle
                               </button>
 
                               <button
@@ -379,9 +379,9 @@ export default function RoomsPage() {
                   <form onSubmit={handleReservationSubmit} className="space-y-4">
                     <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
                       <SectionTitle
-                        icon="ğŸ“Œ"
-                        title={editingId ? "Program DÃ¼zenle" : "Program OluÅŸtur"}
-                        description="Mekan, gÃ¼n ve saat bilgilerini girin."
+                        icon="📌"
+                        title={editingId ? "Program Düzenle" : "Program Oluştur"}
+                        description="Mekan, gün ve saat bilgilerini girin."
                       />
 
                       {editingId && (
@@ -390,7 +390,7 @@ export default function RoomsPage() {
                           onClick={resetReservationForm}
                           className="h-10 w-fit rounded-2xl border border-[#E6EEF9] bg-white px-4 text-sm font-semibold text-slate-600 transition hover:bg-slate-50"
                         >
-                          DÃ¼zenlemeyi Ä°ptal Et
+                          Düzenlemeyi İptal Et
                         </button>
                       )}
                     </div>
@@ -401,7 +401,7 @@ export default function RoomsPage() {
                         setValue={setRoomId}
                         required
                         options={[
-                          { value: "", label: "Mekan seÃ§" },
+                          { value: "", label: "Mekan seç" },
                           ...rooms.map((room) => ({
                             value: String(room.id),
                             label: room.name,
@@ -412,7 +412,7 @@ export default function RoomsPage() {
                       <Input
                         value={title}
                         setValue={setTitle}
-                        placeholder="BaÅŸlÄ±k"
+                        placeholder="Başlık"
                         required
                       />
 
@@ -464,7 +464,7 @@ export default function RoomsPage() {
                         type="submit"
                         className="h-11 rounded-2xl bg-sky-600 px-6 text-sm font-semibold text-white shadow-sm transition hover:bg-sky-700"
                       >
-                        {editingId ? "GÃ¼ncelle" : "Kaydet"}
+                        {editingId ? "Güncelle" : "Kaydet"}
                       </button>
 
                       {editingId && (
@@ -473,7 +473,7 @@ export default function RoomsPage() {
                           onClick={resetReservationForm}
                           className="h-11 rounded-2xl border border-[#E6EEF9] bg-white px-6 text-sm font-semibold text-slate-600 transition hover:bg-slate-50"
                         >
-                          VazgeÃ§
+                          Vazgeç
                         </button>
                       )}
                     </div>
@@ -483,13 +483,13 @@ export default function RoomsPage() {
                 <section className="rounded-2xl border border-[#E6EEF9] bg-white p-4 shadow-sm md:rounded-3xl md:p-5">
                   <div className="mb-4 flex items-center justify-between gap-3">
                     <SectionTitle
-                      icon="ğŸ—“"
-                      title="HaftalÄ±k GÃ¶rÃ¼nÃ¼m"
-                      description="GÃ¼nlere gÃ¶re mekan talepleri."
+                      icon="🗓️"
+                      title="Haftalık Görünüm"
+                      description="Günlere göre mekan talepleri."
                     />
 
                     <span className="rounded-full bg-[#F8FBFF] px-3 py-1.5 text-xs font-semibold text-slate-500 md:text-sm">
-                      {dayNames.length} gÃ¼n
+                      {dayNames.length} gün
                     </span>
                   </div>
 
@@ -536,7 +536,7 @@ export default function RoomsPage() {
                                   </div>
 
                                   <p className="text-xs text-slate-400">
-                                    {formatDate(reservation.start_date)} â†’{" "}
+                                    {formatDate(reservation.start_date)} →{" "}
                                     {formatDate(reservation.end_date)}
                                   </p>
 
@@ -553,7 +553,7 @@ export default function RoomsPage() {
                                       }
                                       className="h-10 rounded-2xl border border-[#E6EEF9] bg-white text-sm font-semibold text-slate-600 transition hover:bg-slate-50"
                                     >
-                                      DÃ¼zenle
+                                      Düzenle
                                     </button>
 
                                     <button
@@ -675,7 +675,7 @@ function WeekdayPicker({
   return (
     <fieldset className="rounded-2xl border border-[#E6EEF9] bg-[#F8FBFF] p-3 lg:col-span-3">
       <legend className="px-1 text-sm font-semibold text-slate-700">
-        GÃ¼n seÃ§iniz
+        Gün seçiniz
       </legend>
 
       <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-4 lg:grid-cols-7">
@@ -703,8 +703,8 @@ function WeekdayPicker({
 
       <p className="mt-2 text-xs text-slate-400">
         {singleSelect
-          ? "DÃ¼zenleme sÄ±rasÄ±nda bir gÃ¼n seÃ§ilebilir."
-          : "Birden fazla gÃ¼n seÃ§ebilirsiniz."}
+          ? "Düzenleme sırasında bir gün seçilebilir."
+          : "Birden fazla gün seçebilirsiniz."}
       </p>
     </fieldset>
   );
