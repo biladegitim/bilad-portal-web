@@ -210,7 +210,7 @@ export default function RoomsPage() {
   }
 
   async function handleDeleteReservation(id: number) {
-    if (!confirm("Bu rezervasyon silinsin mi?")) return;
+    if (!confirm("Bu program silinsin mi?")) return;
 
     const response = await apiFetch(`/room-reservations/${id}`, {
       method: "DELETE",
@@ -218,7 +218,7 @@ export default function RoomsPage() {
     });
 
     if (!response.ok) {
-      alert("Rezervasyon silinemedi");
+      alert("Program silinemedi");
       return;
     }
 
@@ -250,7 +250,7 @@ export default function RoomsPage() {
               </h1>
 
               <p className="mt-1.5 text-sm text-slate-400 md:text-base">
-                Mekanları ve haftalık rezervasyonları yönetin.
+                Mekanları ve haftalık programları yönetin.
               </p>
             </div>
           </header>
@@ -361,7 +361,7 @@ export default function RoomsPage() {
                     <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
                       <SectionTitle
                         icon="📌"
-                        title={editingId ? "Rezervasyon Düzenle" : "Rezervasyon Oluştur"}
+                        title={editingId ? "Program Düzenle" : "Program Oluştur"}
                         description="Mekan, gün ve saat bilgilerini girin."
                       />
 
@@ -467,7 +467,7 @@ export default function RoomsPage() {
                     <SectionTitle
                       icon="🗓"
                       title="Haftalık Görünüm"
-                      description="Günlere göre mekan rezervasyonları."
+                      description="Günlere göre mekan talepleri."
                     />
 
                     <span className="rounded-full bg-[#F8FBFF] px-3 py-1.5 text-xs font-semibold text-slate-500 md:text-sm">
@@ -491,7 +491,7 @@ export default function RoomsPage() {
                           {!weeklySchedule[day] ||
                           weeklySchedule[day].length === 0 ? (
                             <div className="rounded-2xl bg-white p-4 text-center text-sm text-slate-400">
-                              Rezervasyon yok.
+                              Program yok.
                             </div>
                           ) : (
                             <div className="space-y-3">
