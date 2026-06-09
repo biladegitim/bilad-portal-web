@@ -48,6 +48,25 @@ const dayNames = [
   "Pazar",
 ];
 
+function normalizeWeeklySchedule(
+  schedule: Record<string, Reservation[]>
+): Record<string, Reservation[]> {
+  const normalized = Object.fromEntries(
+    dayNames.map((day) => [day, [] as Reservation[]])
+  );
+  const reservations = Object.values(schedule).flat();
+
+  for (const reservation of reservations) {
+    const dayName = dayNames[reservation.weekday];
+
+    if (dayName) {
+      normalized[dayName].push(reservation);
+    }
+  }
+
+  return normalized;
+}
+
 export default function RoomsPage() {
   const router = useRouter();
 
@@ -80,7 +99,9 @@ export default function RoomsPage() {
 
       const weeklyRes = await apiFetch("/room-reservations/weekly");
       const weeklyData = await weeklyRes.json();
-      setWeeklySchedule(weeklyData.weekly_schedule || {});
+      setWeeklySchedule(
+        normalizeWeeklySchedule(weeklyData.weekly_schedule || {})
+      );
     } catch {
       setRooms([]);
       setWeeklySchedule({});
@@ -216,15 +237,32 @@ export default function RoomsPage() {
     fetchData();
   }
 
-  async function handleDeleteReservation(id: number) {
-    if (!confirm("Bu program silinsin mi?")) return;
+  async function handleDeleteReservation(reservation: Reservation) {
+    if (!confirm("Bu program ve seçili tüm günleri silinsin mi?")) return;
 
-    const response = await apiFetch(`/room-reservations/${id}`, {
-      method: "DELETE",
-      headers: authHeaders(),
-    });
+    const matchingReservations = Object.values(weeklySchedule)
+      .flat()
+      .filter(
+        (item) =>
+          item.room_id === reservation.room_id &&
+          item.title === reservation.title &&
+          item.description === reservation.description &&
+          item.start_date === reservation.start_date &&
+          item.end_date === reservation.end_date &&
+          item.start_time === reservation.start_time &&
+          item.end_time === reservation.end_time
+      );
 
-    if (!response.ok) {
+    const responses = await Promise.all(
+      matchingReservations.map((item) =>
+        apiFetch(`/room-reservations/${item.reservation_id}`, {
+          method: "DELETE",
+          headers: authHeaders(),
+        })
+      )
+    );
+
+    if (responses.some((response) => !response.ok)) {
       alert("Program silinemedi");
       return;
     }
@@ -558,9 +596,7 @@ export default function RoomsPage() {
 
                                     <button
                                       onClick={() =>
-                                        handleDeleteReservation(
-                                          reservation.reservation_id
-                                        )
+                                        handleDeleteReservation(reservation)
                                       }
                                       className="h-10 rounded-2xl bg-red-50 text-sm font-semibold text-red-600 transition hover:bg-red-100"
                                     >
