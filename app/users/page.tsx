@@ -183,26 +183,33 @@ export default function UsersPage() {
         return;
       }
 
-      for (const option of permissionOptions) {
-        const hasPermission = selectedPermissions.includes(option.code);
+      const permissionResponses = await Promise.all(
+        permissionOptions.map((option) => {
+          const hasPermission = selectedPermissions.includes(option.code);
 
-        if (hasPermission) {
-          await apiFetch(`/users/${editingUser.id}/permissions`, {
-            method: "POST",
-            headers: jsonAuthHeaders(),
-            body: JSON.stringify({
-              permission_code: option.code,
-            }),
-          });
-        } else {
-          await apiFetch(
+          if (hasPermission) {
+            return apiFetch(`/users/${editingUser.id}/permissions`, {
+              method: "POST",
+              headers: jsonAuthHeaders(),
+              body: JSON.stringify({
+                permission_code: option.code,
+              }),
+            });
+          }
+
+          return apiFetch(
             `/users/${editingUser.id}/permissions/${option.code}`,
             {
               method: "DELETE",
               headers: authHeaders(),
             }
           );
-        }
+        })
+      );
+
+      if (permissionResponses.some((response) => !response.ok)) {
+        alert("Yetkiler kaydedilemedi.");
+        return;
       }
 
       alert("Kullanıcı güncellendi.");
