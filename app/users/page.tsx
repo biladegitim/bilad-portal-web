@@ -236,6 +236,24 @@ export default function UsersPage() {
     fetchUsers();
   }
 
+  async function handleDeleteInactiveUsers() {
+    if (!confirm("Pasif kullanıcılar kalıcı olarak silinsin mi?")) return;
+
+    const response = await apiFetch("/users/inactive", {
+      method: "DELETE",
+      headers: authHeaders(),
+    });
+
+    if (!response.ok) {
+      alert("Pasif kullanıcılar silinemedi");
+      return;
+    }
+
+    const data = await response.json();
+    alert(`${data.deleted_count || 0} pasif kullanıcı silindi.`);
+    fetchUsers();
+  }
+
   function roleLabel(role: string) {
     if (role === "super_admin") return "Süper Admin";
     if (role === "admin") return "Admin";
@@ -271,16 +289,26 @@ export default function UsersPage() {
             <div className="flex h-14 items-center justify-between md:h-16">
               <div className="h-11 w-11 md:hidden" />
 
-              <button
-                type="button"
-                onClick={() => {
-                  setShowCreateForm(!showCreateForm);
-                  resetEdit();
-                }}
-                className="ml-auto h-11 rounded-2xl bg-sky-600 px-5 text-sm font-semibold text-white shadow-sm transition hover:bg-sky-700"
-              >
-                {showCreateForm ? "Formu Kapat" : "+ Kullanıcı Ekle"}
-              </button>
+              <div className="ml-auto flex flex-col gap-2 sm:flex-row">
+                <button
+                  type="button"
+                  onClick={handleDeleteInactiveUsers}
+                  className="h-11 rounded-2xl bg-red-50 px-5 text-sm font-semibold text-red-600 shadow-sm transition hover:bg-red-100"
+                >
+                  Pasifleri Temizle
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowCreateForm(!showCreateForm);
+                    resetEdit();
+                  }}
+                  className="h-11 rounded-2xl bg-sky-600 px-5 text-sm font-semibold text-white shadow-sm transition hover:bg-sky-700"
+                >
+                  {showCreateForm ? "Formu Kapat" : "+ Kullanıcı Ekle"}
+                </button>
+              </div>
             </div>
 
             <div className="mt-5 md:mt-6">
