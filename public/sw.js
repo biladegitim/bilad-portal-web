@@ -62,6 +62,40 @@ self.addEventListener("fetch", (event) => {
   }
 });
 
+self.addEventListener("push", (event) => {
+  const payload = event.data
+    ? event.data.json()
+    : {
+        title: "Bilad Portal",
+        body: "Yeni bildiriminiz var.",
+        url: "/",
+        badgeCount: 1,
+      };
+
+  event.waitUntil(handlePush(payload));
+});
+
+self.addEventListener("notificationclick", (event) => {
+  event.notification.close();
+
+  const targetUrl = new URL(event.notification.data?.url || "/", self.location.origin);
+
+  event.waitUntil(
+    clients
+      .matchAll({ type: "window", includeUncontrolled: true })
+      .then((clientList) => {
+        for (const client of clientList) {
+          if ("focus" in client) {
+            client.navigate(targetUrl.href);
+            return client.focus();
+          }
+        }
+
+        return clients.openWindow(targetUrl.href);
+      })
+  );
+});
+
 async function handleNavigation(request, url) {
   try {
     return await fetch(request);
@@ -94,4 +128,29 @@ function isStaticAsset(url) {
     url.pathname.startsWith("/_next/static/") ||
     /\.(?:css|js|png|jpg|jpeg|webp|svg|ico|woff2?)$/i.test(url.pathname)
   );
+}
+
+async function handlePush(payload) {
+  await setBadge(payload.badgeCount);
+
+  return self.registration.showNotification(payload.title || "Bilad Portal", {
+    body: payload.body || "Yeni bildiriminiz var.",
+    icon: payload.icon || "/icon-192.png",
+    badge: payload.badge || "/icon-192.png",
+    data: {
+      url: payload.url || "/",
+    },
+  });
+}
+
+async function setBadge(count) {
+  if (!self.navigator || !self.navigator.setAppBadge) return;
+
+  try {
+    if (count > 0) {
+      await self.navigator.setAppBadge(count);
+    } else if (self.navigator.clearAppBadge) {
+      await self.navigator.clearAppBadge();
+    }
+  } catch {}
 }

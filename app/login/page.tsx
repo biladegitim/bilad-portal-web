@@ -3,6 +3,7 @@
 import { useState } from "react";
 
 import { apiFetch } from "@/lib/api";
+import { subscribeToPushNotifications } from "@/lib/notifications";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -44,6 +45,8 @@ export default function LoginPage() {
       if (data.user) {
         localStorage.setItem("user", JSON.stringify(data.user));
       }
+
+      await subscribeToPushNotifications().catch(() => {});
 
       window.location.href = "/";
     } catch (err) {

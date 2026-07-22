@@ -4,7 +4,10 @@ import { useCallback, useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 
 import { getAccessToken } from "@/lib/auth";
-import { fetchUnreadLeaveNotificationCount } from "@/lib/notifications";
+import {
+  fetchUnreadLeaveNotificationCount,
+  updateAppBadge,
+} from "@/lib/notifications";
 
 export function useLeaveNotifications() {
   const pathname = usePathname();
@@ -13,10 +16,13 @@ export function useLeaveNotifications() {
   const refresh = useCallback(async () => {
     if (!getAccessToken()) {
       setCount(0);
+      updateAppBadge(0);
       return;
     }
 
-    setCount(await fetchUnreadLeaveNotificationCount());
+    const unreadCount = await fetchUnreadLeaveNotificationCount();
+    setCount(unreadCount);
+    updateAppBadge(unreadCount);
   }, []);
 
   useEffect(() => {
