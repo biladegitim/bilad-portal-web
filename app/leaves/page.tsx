@@ -278,6 +278,7 @@ export default function LeavesPage() {
                       statusLabel={statusLabel}
                       statusClass={statusClass}
                       formatDate={formatDate}
+                      onDelete={() => deleteLeave(leave.id)}
                     />
                   ))}
                 </div>
@@ -359,7 +360,7 @@ function LeaveCard({
         {leave.reason}
       </p>
 
-      {admin && (
+      {(admin || onDelete) && (
         <div className="mt-4 grid grid-cols-1 gap-2 sm:grid-cols-3">
           {leave.status === "pending" && (
             <>
@@ -379,12 +380,14 @@ function LeaveCard({
             </>
           )}
 
-          <button
-            onClick={onDelete}
-            className="h-10 rounded-2xl bg-red-50 text-sm font-semibold text-red-600 transition hover:bg-red-100"
-          >
-            Sil
-          </button>
+          {onDelete && (
+            <button
+              onClick={onDelete}
+              className="h-10 rounded-2xl bg-red-50 text-sm font-semibold text-red-600 transition hover:bg-red-100"
+            >
+              Sil
+            </button>
+          )}
         </div>
       )}
     </article>
