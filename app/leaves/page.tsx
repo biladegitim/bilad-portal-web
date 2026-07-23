@@ -362,7 +362,7 @@ function LeaveCard({
 
       {(admin || onDelete) && (
         <div className="mt-4 grid grid-cols-1 gap-2 sm:grid-cols-3">
-          {leave.status === "pending" && (
+          {admin && leave.status === "pending" && (
             <>
               <button
                 onClick={onApprove}
