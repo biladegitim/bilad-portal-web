@@ -20,6 +20,7 @@ type UserItem = {
 };
 
 const permissionOptions = [
+  { code: "room.approve", label: "Mekan Onaylama" },
   { code: "menu.manage", label: "Menü Yönetimi" },
   { code: "leave.approve", label: "İzin Onaylama" },
   { code: "attendance.view", label: "Giriş-Çıkış Raporları" },

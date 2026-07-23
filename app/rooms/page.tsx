@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import Sidebar from "@/components/Sidebar";
 
 import { apiFetch } from "@/lib/api";
-import { canManageRooms, fetchProfileAccess } from "@/lib/access";
+import { canApproveRooms, canManageRooms, fetchProfileAccess } from "@/lib/access";
 import { authHeaders, getAccessToken, jsonAuthHeaders } from "@/lib/auth";
 
 type Room = {
@@ -26,6 +26,9 @@ type Reservation = {
   start_date: string;
   end_date: string;
   weekday: number;
+  created_by?: number;
+  created_by_name?: string;
+  status?: string;
 };
 
 const weekdays = [
@@ -72,8 +75,10 @@ export default function RoomsPage() {
 
   const [rooms, setRooms] = useState<Room[]>([]);
   const [weeklySchedule, setWeeklySchedule] = useState<Record<string, Reservation[]>>({});
+  const [pendingReservations, setPendingReservations] = useState<Reservation[]>([]);
   const [loading, setLoading] = useState(true);
   const [isSuperAdmin, setIsSuperAdmin] = useState(false);
+  const [canReviewRoomRequests, setCanReviewRoomRequests] = useState(false);
 
   const [roomName, setRoomName] = useState("");
   const [roomDescription, setRoomDescription] = useState("");
@@ -91,7 +96,12 @@ export default function RoomsPage() {
 
   async function fetchData() {
     try {
-      setIsSuperAdmin(canManageRooms(await fetchProfileAccess()));
+      const access = await fetchProfileAccess();
+      const canManage = canManageRooms(access);
+      const canReview = canApproveRooms(access);
+
+      setIsSuperAdmin(canManage);
+      setCanReviewRoomRequests(canReview);
 
       const roomsRes = await apiFetch("/rooms");
       const roomsData = await roomsRes.json();
@@ -102,9 +112,25 @@ export default function RoomsPage() {
       setWeeklySchedule(
         normalizeWeeklySchedule(weeklyData.weekly_schedule || {})
       );
+
+      if (canReview) {
+        const pendingRes = await apiFetch("/room-reservations/pending", {
+          headers: authHeaders(),
+        });
+
+        if (pendingRes.ok) {
+          const pendingData = await pendingRes.json();
+          setPendingReservations(pendingData.reservations || []);
+        } else {
+          setPendingReservations([]);
+        }
+      } else {
+        setPendingReservations([]);
+      }
     } catch {
       setRooms([]);
       setWeeklySchedule({});
+      setPendingReservations([]);
     } finally {
       setLoading(false);
     }
@@ -233,7 +259,29 @@ export default function RoomsPage() {
       return;
     }
 
+    alert(editingId ? "Program güncellendi." : "Program talebi oluşturuldu. Onaylanınca haftalık planda görünecek.");
     resetReservationForm();
+    fetchData();
+  }
+
+  async function updateRoomRequestStatus(
+    reservationId: number,
+    action: "approve" | "reject"
+  ) {
+    const response = await apiFetch(
+      `/room-reservations/${reservationId}/${action}`,
+      {
+        method: "PATCH",
+        headers: authHeaders(),
+      }
+    );
+
+    if (!response.ok) {
+      const data = await response.json();
+      alert(data.detail || "Talep güncellenemedi");
+      return;
+    }
+
     fetchData();
   }
 
@@ -418,8 +466,8 @@ export default function RoomsPage() {
                     <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
                       <SectionTitle
                         icon="📌"
-                        title={editingId ? "Program Düzenle" : "Program Oluştur"}
-                        description="Mekan, gün ve saat bilgilerini girin."
+                        title={editingId ? "Program Düzenle" : "Program Talebi Oluştur"}
+                        description="Mekan, gün ve saat bilgilerini girin. Talep onaylanınca haftalık plana eklenir."
                       />
 
                       {editingId && (
@@ -502,7 +550,7 @@ export default function RoomsPage() {
                         type="submit"
                         className="h-11 rounded-2xl bg-sky-600 px-6 text-sm font-semibold text-white shadow-sm transition hover:bg-sky-700"
                       >
-                        {editingId ? "Güncelle" : "Kaydet"}
+                        {editingId ? "Güncelle" : "Talep Oluştur"}
                       </button>
 
                       {editingId && (
@@ -517,6 +565,100 @@ export default function RoomsPage() {
                     </div>
                   </form>
                 </section>
+
+                {canReviewRoomRequests && (
+                  <section className="rounded-2xl border border-[#E6EEF9] bg-white p-4 shadow-sm md:rounded-3xl md:p-5">
+                    <div className="mb-4 flex items-center justify-between gap-3">
+                      <SectionTitle
+                        icon="✅"
+                        title="Bekleyen Program Talepleri"
+                        description="Onaylanınca haftalık plana eklenecek mekan programları."
+                      />
+
+                      <span className="rounded-full bg-[#F8FBFF] px-3 py-1.5 text-xs font-semibold text-slate-500 md:text-sm">
+                        {pendingReservations.length} talep
+                      </span>
+                    </div>
+
+                    {pendingReservations.length === 0 ? (
+                      <div className="rounded-2xl bg-[#F8FBFF] p-4 text-sm text-slate-400 md:text-base">
+                        Bekleyen program talebi yok.
+                      </div>
+                    ) : (
+                      <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
+                        {pendingReservations.map((reservation) => (
+                          <article
+                            key={reservation.reservation_id}
+                            className="rounded-2xl border border-[#E6EEF9] bg-[#F8FBFF] p-4 transition hover:bg-white hover:shadow-sm"
+                          >
+                            <div className="mb-3 flex items-start justify-between gap-3">
+                              <div className="min-w-0">
+                                <p className="truncate text-sm font-semibold text-slate-800 md:text-base">
+                                  {reservation.room_name}
+                                </p>
+
+                                <p className="mt-0.5 truncate text-sm text-slate-600">
+                                  {reservation.title}
+                                </p>
+                              </div>
+
+                              <span className="shrink-0 rounded-full bg-amber-50 px-3 py-1 text-xs font-semibold text-amber-700">
+                                Bekliyor
+                              </span>
+                            </div>
+
+                            <div className="rounded-2xl bg-white p-3 text-sm leading-6 text-slate-600">
+                              <p>Talep eden: {reservation.created_by_name || "Bilinmiyor"}</p>
+                              <p>Gün: {dayNames[reservation.weekday] || "-"}</p>
+                              <p>
+                                Saat: {reservation.start_time.slice(0, 5)} -{" "}
+                                {reservation.end_time.slice(0, 5)}
+                              </p>
+                              <p>
+                                Tarih: {formatDate(reservation.start_date)} →{" "}
+                                {formatDate(reservation.end_date)}
+                              </p>
+                            </div>
+
+                            {reservation.description && (
+                              <p className="mt-3 rounded-2xl bg-white p-3 text-sm leading-6 text-slate-500">
+                                {reservation.description}
+                              </p>
+                            )}
+
+                            <div className="mt-4 grid grid-cols-2 gap-2">
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  updateRoomRequestStatus(
+                                    reservation.reservation_id,
+                                    "approve"
+                                  )
+                                }
+                                className="h-10 rounded-2xl bg-emerald-500 text-sm font-semibold text-white transition hover:bg-emerald-600"
+                              >
+                                Onayla
+                              </button>
+
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  updateRoomRequestStatus(
+                                    reservation.reservation_id,
+                                    "reject"
+                                  )
+                                }
+                                className="h-10 rounded-2xl border border-[#E6EEF9] bg-white text-sm font-semibold text-slate-600 transition hover:bg-slate-50"
+                              >
+                                Reddet
+                              </button>
+                            </div>
+                          </article>
+                        ))}
+                      </div>
+                    )}
+                  </section>
+                )}
 
                 <section className="rounded-2xl border border-[#E6EEF9] bg-white p-4 shadow-sm md:rounded-3xl md:p-5">
                   <div className="mb-4 flex items-center justify-between gap-3">
@@ -584,25 +726,27 @@ export default function RoomsPage() {
                                     </p>
                                   )}
 
-                                  <div className="mt-3 grid grid-cols-2 gap-2">
-                                    <button
-                                      onClick={() =>
-                                        startEditReservation(reservation)
-                                      }
-                                      className="h-10 rounded-2xl border border-[#E6EEF9] bg-white text-sm font-semibold text-slate-600 transition hover:bg-slate-50"
-                                    >
-                                      Düzenle
-                                    </button>
+                                  {canReviewRoomRequests && (
+                                    <div className="mt-3 grid grid-cols-2 gap-2">
+                                      <button
+                                        onClick={() =>
+                                          startEditReservation(reservation)
+                                        }
+                                        className="h-10 rounded-2xl border border-[#E6EEF9] bg-white text-sm font-semibold text-slate-600 transition hover:bg-slate-50"
+                                      >
+                                        Düzenle
+                                      </button>
 
-                                    <button
-                                      onClick={() =>
-                                        handleDeleteReservation(reservation)
-                                      }
-                                      className="h-10 rounded-2xl bg-red-50 text-sm font-semibold text-red-600 transition hover:bg-red-100"
-                                    >
-                                      Sil
-                                    </button>
-                                  </div>
+                                      <button
+                                        onClick={() =>
+                                          handleDeleteReservation(reservation)
+                                        }
+                                        className="h-10 rounded-2xl bg-red-50 text-sm font-semibold text-red-600 transition hover:bg-red-100"
+                                      >
+                                        Sil
+                                      </button>
+                                    </div>
+                                  )}
                                 </div>
                               ))}
                             </div>

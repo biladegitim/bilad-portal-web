@@ -37,3 +37,12 @@ export function canManageRooms(access: ProfileAccess | null) {
       access?.is_admin
   );
 }
+
+export function canApproveRooms(access: ProfileAccess | null) {
+  return Boolean(
+    access?.role === "super_admin" ||
+      access?.is_super_admin ||
+      access?.is_admin ||
+      access?.permissions?.includes("room.approve")
+  );
+}
