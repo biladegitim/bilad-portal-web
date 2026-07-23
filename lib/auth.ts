@@ -4,6 +4,13 @@ export function getAccessToken() {
   return localStorage.getItem("access_token");
 }
 
+export function clearAuthSession() {
+  if (typeof window === "undefined") return;
+
+  localStorage.removeItem("access_token");
+  localStorage.removeItem("user");
+}
+
 export function authHeaders(): HeadersInit {
   const token = getAccessToken();
 
