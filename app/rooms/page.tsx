@@ -360,7 +360,7 @@ export default function RoomsPage() {
             </div>
           </header>
 
-          <div className="space-y-4 md:space-y-5">
+          <div className="flex flex-col gap-4 md:gap-5">
             {loading ? (
               <InfoBox>Kat planı yükleniyor...</InfoBox>
             ) : (
@@ -660,7 +660,7 @@ export default function RoomsPage() {
                   </section>
                 )}
 
-                <section className="rounded-2xl border border-[#E6EEF9] bg-white p-4 shadow-sm md:rounded-3xl md:p-5">
+                <section className="order-first rounded-2xl border border-[#E6EEF9] bg-white p-4 shadow-sm md:rounded-3xl md:p-5">
                   <div className="mb-4 flex items-center justify-between gap-3">
                     <SectionTitle
                       icon="🗓️"
