@@ -106,9 +106,12 @@ export default function Home() {
   }
 
   function formatTime(date: string) {
-    return new Date(date).toLocaleTimeString("tr-TR", {
+    const utcDate = date.endsWith("Z") ? date : `${date}Z`;
+
+    return new Date(utcDate).toLocaleTimeString("tr-TR", {
       hour: "2-digit",
       minute: "2-digit",
+      timeZone: "Europe/Istanbul",
     });
   }
 
