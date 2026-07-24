@@ -1,6 +1,6 @@
 ﻿"use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import Sidebar from "@/components/Sidebar";
@@ -13,6 +13,8 @@ type Room = {
   id: number;
   name: string;
   description: string | null;
+  floor?: string | null;
+  floor_name?: string | null;
 };
 
 type Reservation = {
@@ -51,6 +53,14 @@ const dayNames = [
   "Pazar",
 ];
 
+const FLOOR_STORAGE_KEY = "bilad-room-floors";
+const ROOM_FLOOR_STORAGE_KEY = "bilad-room-floor-map";
+const unassignedFloor = "Kat seçilmemiş";
+
+function getRoomFloor(room: Room, roomFloorMap: Record<number, string>) {
+  return room.floor_name || room.floor || roomFloorMap[room.id] || unassignedFloor;
+}
+
 function normalizeWeeklySchedule(
   schedule: Record<string, Reservation[]>
 ): Record<string, Reservation[]> {
@@ -83,7 +93,11 @@ export default function RoomsPage() {
 
   const [roomName, setRoomName] = useState("");
   const [roomDescription, setRoomDescription] = useState("");
+  const [roomFloor, setRoomFloor] = useState("");
   const [editingRoomId, setEditingRoomId] = useState<number | null>(null);
+  const [floors, setFloors] = useState<string[]>([]);
+  const [floorName, setFloorName] = useState("");
+  const [roomFloorMap, setRoomFloorMap] = useState<Record<number, string>>({});
 
   const [editingId, setEditingId] = useState<number | null>(null);
   const [roomId, setRoomId] = useState("");
@@ -94,6 +108,62 @@ export default function RoomsPage() {
   const [selectedWeekdays, setSelectedWeekdays] = useState<string[]>(["0"]);
   const [startTime, setStartTime] = useState("");
   const [endTime, setEndTime] = useState("");
+  const [selectedScheduleDay, setSelectedScheduleDay] = useState(dayNames[0]);
+  const [selectedScheduleFloor, setSelectedScheduleFloor] = useState("");
+  const [selectedScheduleRoomId, setSelectedScheduleRoomId] = useState<number | null>(null);
+
+  useEffect(() => {
+    try {
+      const storedFloors = JSON.parse(
+        localStorage.getItem(FLOOR_STORAGE_KEY) || "[]"
+      );
+      const storedRoomFloors = JSON.parse(
+        localStorage.getItem(ROOM_FLOOR_STORAGE_KEY) || "{}"
+      );
+
+      setFloors(Array.isArray(storedFloors) ? storedFloors : []);
+      setRoomFloorMap(storedRoomFloors || {});
+    } catch {
+      setFloors([]);
+      setRoomFloorMap({});
+    }
+  }, []);
+
+  const floorOptions = useMemo(() => {
+    const names = new Set(floors);
+
+    rooms.forEach((room) => {
+      const floor = getRoomFloor(room, roomFloorMap);
+      names.add(floor);
+    });
+
+    return Array.from(names);
+  }, [floors, rooms, roomFloorMap]);
+
+  const roomsByFloor = useMemo(() => {
+    const grouped = Object.fromEntries(
+      floorOptions.map((floor) => [floor, [] as Room[]])
+    );
+
+    rooms.forEach((room) => {
+      const floor = getRoomFloor(room, roomFloorMap);
+      if (!grouped[floor]) grouped[floor] = [];
+      grouped[floor].push(room);
+    });
+
+    return grouped;
+  }, [floorOptions, rooms, roomFloorMap]);
+
+  const selectedDayReservations = weeklySchedule[selectedScheduleDay] || [];
+  const selectedFloorRooms = selectedScheduleFloor
+    ? roomsByFloor[selectedScheduleFloor] || []
+    : [];
+  const selectedScheduleRoom = rooms.find(
+    (room) => room.id === selectedScheduleRoomId
+  );
+  const selectedRoomReservations = selectedDayReservations.filter(
+    (reservation) => reservation.room_id === selectedScheduleRoomId
+  );
 
   async function fetchData() {
     try {
@@ -151,6 +221,7 @@ export default function RoomsPage() {
   function resetRoomForm() {
     setRoomName("");
     setRoomDescription("");
+    setRoomFloor("");
     setEditingRoomId(null);
   }
 
@@ -158,6 +229,40 @@ export default function RoomsPage() {
     setEditingRoomId(room.id);
     setRoomName(room.name);
     setRoomDescription(room.description || "");
+    const floor = getRoomFloor(room, roomFloorMap);
+    setRoomFloor(floor === unassignedFloor ? "" : floor);
+  }
+
+  function saveFloors(nextFloors: string[]) {
+    setFloors(nextFloors);
+    localStorage.setItem(FLOOR_STORAGE_KEY, JSON.stringify(nextFloors));
+  }
+
+  function saveRoomFloorMap(nextMap: Record<number, string>) {
+    setRoomFloorMap(nextMap);
+    localStorage.setItem(ROOM_FLOOR_STORAGE_KEY, JSON.stringify(nextMap));
+  }
+
+  function handleFloorSubmit(e: React.FormEvent) {
+    e.preventDefault();
+
+    const normalizedName = floorName.trim();
+    if (!normalizedName) return;
+
+    const floorExists = floors.some(
+      (floor) =>
+        floor.toLocaleLowerCase("tr-TR") ===
+        normalizedName.toLocaleLowerCase("tr-TR")
+    );
+
+    if (floorExists) {
+      alert("Bu kat zaten eklenmiş.");
+      return;
+    }
+
+    saveFloors([...floors, normalizedName]);
+    setFloorName("");
+    setRoomFloor(normalizedName);
   }
 
   async function handleRoomSubmit(e: React.FormEvent) {
@@ -180,8 +285,18 @@ export default function RoomsPage() {
       return;
     }
 
+    if (editingRoomId) {
+      saveRoomFloorMap({ ...roomFloorMap, [editingRoomId]: roomFloor });
+    } else {
+      const data = await response.json().catch(() => null);
+      const createdRoom = data?.room || data;
+
+      if (createdRoom?.id) {
+        saveRoomFloorMap({ ...roomFloorMap, [createdRoom.id]: roomFloor });
+      }
+    }
+
     resetRoomForm();
-    setOpenPanel(null);
     fetchData();
   }
 
@@ -198,6 +313,9 @@ export default function RoomsPage() {
       return;
     }
 
+    const nextMap = { ...roomFloorMap };
+    delete nextMap[id];
+    saveRoomFloorMap(nextMap);
     fetchData();
   }
 
@@ -342,6 +460,17 @@ export default function RoomsPage() {
     });
   }
 
+  function selectScheduleDay(day: string) {
+    setSelectedScheduleDay(day);
+    setSelectedScheduleFloor("");
+    setSelectedScheduleRoomId(null);
+  }
+
+  function selectScheduleFloor(floor: string) {
+    setSelectedScheduleFloor(floor);
+    setSelectedScheduleRoomId(null);
+  }
+
   return (
     <div className="flex min-h-screen bg-[#F6F9FF]">
       <Sidebar />
@@ -428,9 +557,43 @@ export default function RoomsPage() {
                     </div>
 
                     <form
-                      onSubmit={handleRoomSubmit}
-                      className="grid grid-cols-1 gap-4 lg:grid-cols-3"
+                      onSubmit={handleFloorSubmit}
+                      className="mb-4 grid grid-cols-1 gap-3 rounded-2xl border border-[#E6EEF9] bg-[#F8FBFF] p-3 md:grid-cols-[1fr_auto]"
                     >
+                      <Input
+                        value={floorName}
+                        setValue={setFloorName}
+                        placeholder="Kat adı ekle"
+                        required
+                      />
+
+                      <button
+                        type="submit"
+                        className="h-11 rounded-2xl bg-slate-800 px-5 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-900"
+                      >
+                        Kat Ekle
+                      </button>
+                    </form>
+
+                    <form
+                      onSubmit={handleRoomSubmit}
+                      className="grid grid-cols-1 gap-4 lg:grid-cols-4"
+                    >
+                      <Select
+                        value={roomFloor}
+                        setValue={setRoomFloor}
+                        required
+                        options={[
+                          { value: "", label: "Önce kat seç" },
+                          ...floorOptions
+                            .filter((floor) => floor !== unassignedFloor)
+                            .map((floor) => ({
+                              value: floor,
+                              label: floor,
+                            })),
+                        ]}
+                      />
+
                       <Input
                         value={roomName}
                         setValue={setRoomName}
@@ -447,7 +610,8 @@ export default function RoomsPage() {
                       <div className="flex flex-col gap-2 sm:flex-row">
                         <button
                           type="submit"
-                          className="h-11 rounded-2xl bg-sky-600 px-5 text-sm font-semibold text-white shadow-sm transition hover:bg-sky-700"
+                          disabled={floors.length === 0}
+                          className="h-11 rounded-2xl bg-sky-600 px-5 text-sm font-semibold text-white shadow-sm transition hover:bg-sky-700 disabled:cursor-not-allowed disabled:bg-slate-300"
                         >
                           {editingRoomId ? "Güncelle" : "Mekan Ekle"}
                         </button>
@@ -464,49 +628,76 @@ export default function RoomsPage() {
                       </div>
                     </form>
 
-                    <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
-                      {rooms.length === 0 ? (
-                        <InfoBox>Henüz mekan eklenmemiş.</InfoBox>
+                    <div className="mt-4 space-y-4">
+                      {floorOptions.length === 0 ? (
+                        <InfoBox>Önce kat ekleyin, ardından mekanları ilgili kata bağlayın.</InfoBox>
                       ) : (
-                        rooms.map((room) => (
-                          <article
-                            key={room.id}
-                            className="rounded-2xl border border-[#E6EEF9] bg-[#F8FBFF] p-4 transition hover:bg-white hover:shadow-sm"
+                        floorOptions.map((floor) => (
+                          <div
+                            key={floor}
+                            className="rounded-2xl border border-[#E6EEF9] bg-[#F8FBFF] p-3"
                           >
-                            <div className="mb-4 flex items-center gap-3">
-                              <span className="text-xl leading-none">🏢</span>
+                            <div className="mb-3 flex items-center justify-between gap-3">
+                              <h3 className="text-sm font-bold text-slate-800 md:text-base">
+                                {floor}
+                              </h3>
 
-                              <div className="min-w-0">
-                                <h3 className="truncate text-sm font-semibold text-slate-800 md:text-base">
-                                  {room.name}
-                                </h3>
+                              <span className="rounded-full bg-white px-3 py-1 text-xs font-semibold text-slate-500">
+                                {(roomsByFloor[floor] || []).length} mekan
+                              </span>
+                            </div>
 
-                                <p className="mt-0.5 text-xs text-slate-400 md:text-sm">
-                                  Mekan
-                                </p>
+                            {(roomsByFloor[floor] || []).length === 0 ? (
+                              <div className="rounded-2xl bg-white p-4 text-sm text-slate-400">
+                                Bu kata henüz mekan eklenmemiş.
                               </div>
-                            </div>
+                            ) : (
+                              <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
+                                {(roomsByFloor[floor] || []).map((room) => (
+                                  <article
+                                    key={room.id}
+                                    className="rounded-2xl border border-[#E6EEF9] bg-white p-4 transition hover:shadow-sm"
+                                  >
+                                    <div className="mb-3 flex items-center gap-3">
+                                      <span className="text-xl leading-none">🏢</span>
 
-                            <p className="line-clamp-2 min-h-[48px] text-sm leading-6 text-slate-600">
-                              {room.description || "Açıklama yok."}
-                            </p>
+                                      <div className="min-w-0">
+                                        <h4 className="truncate text-sm font-semibold text-slate-800 md:text-base">
+                                          {room.name}
+                                        </h4>
 
-                            <div className="mt-4 grid grid-cols-2 gap-3">
-                              <button
-                                onClick={() => startEditRoom(room)}
-                                className="h-10 rounded-2xl border border-[#E6EEF9] bg-white text-sm font-semibold text-slate-600 transition hover:bg-slate-50"
-                              >
-                                Düzenle
-                              </button>
+                                        <p className="mt-0.5 text-xs text-slate-400 md:text-sm">
+                                          {floor}
+                                        </p>
+                                      </div>
+                                    </div>
 
-                              <button
-                                onClick={() => handleDeleteRoom(room.id)}
-                                className="h-10 rounded-2xl bg-red-50 text-sm font-semibold text-red-600 transition hover:bg-red-100"
-                              >
-                                Sil
-                              </button>
-                            </div>
-                          </article>
+                                    <p className="line-clamp-2 min-h-[48px] text-sm leading-6 text-slate-600">
+                                      {room.description || "Açıklama yok."}
+                                    </p>
+
+                                    <div className="mt-4 grid grid-cols-2 gap-3">
+                                      <button
+                                        type="button"
+                                        onClick={() => startEditRoom(room)}
+                                        className="h-10 rounded-2xl border border-[#E6EEF9] bg-white text-sm font-semibold text-slate-600 transition hover:bg-slate-50"
+                                      >
+                                        Düzenle
+                                      </button>
+
+                                      <button
+                                        type="button"
+                                        onClick={() => handleDeleteRoom(room.id)}
+                                        className="h-10 rounded-2xl bg-red-50 text-sm font-semibold text-red-600 transition hover:bg-red-100"
+                                      >
+                                        Sil
+                                      </button>
+                                    </div>
+                                  </article>
+                                ))}
+                              </div>
+                            )}
+                          </div>
                         ))
                       )}
                     </div>
@@ -544,7 +735,7 @@ export default function RoomsPage() {
                           { value: "", label: "Mekan seç" },
                           ...rooms.map((room) => ({
                             value: String(room.id),
-                            label: room.name,
+                            label: `${getRoomFloor(room, roomFloorMap)} / ${room.name}`,
                           })),
                         ]}
                       />
@@ -729,102 +920,243 @@ export default function RoomsPage() {
                 )}
 
                 {openPanel === null && (
-                <section className="rounded-2xl border border-[#E6EEF9] bg-white p-4 shadow-sm md:rounded-3xl md:p-5">
-                  <div className="mb-4 flex items-center justify-between gap-3">
-                    <SectionTitle
-                      icon="🗓️"
-                      title="Haftalık Görünüm"
-                      description="Günlere göre mekan talepleri."
-                    />
+                  <section className="rounded-2xl border border-[#E6EEF9] bg-white p-4 shadow-sm md:rounded-3xl md:p-5">
+                    <div className="mb-4 flex items-center justify-between gap-3">
+                      <SectionTitle
+                        icon="🗓️"
+                        title="Haftalık Görünüm"
+                        description="Gün, kat ve mekan seçerek program durumunu görün."
+                      />
 
-                    <span className="rounded-full bg-[#F8FBFF] px-3 py-1.5 text-xs font-semibold text-slate-500 md:text-sm">
-                      {dayNames.length} gün
-                    </span>
-                  </div>
+                      <span className="rounded-full bg-[#F8FBFF] px-3 py-1.5 text-xs font-semibold text-slate-500 md:text-sm">
+                        {selectedDayReservations.length} program
+                      </span>
+                    </div>
 
-                  <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
-                    {dayNames.map((day) => (
-                      <article
-                        key={day}
-                        className="overflow-hidden rounded-2xl border border-[#E6EEF9] bg-[#F8FBFF]"
-                      >
-                        <div className="border-b border-[#E6EEF9] bg-white px-4 py-3">
+                    <div className="grid grid-cols-7 gap-1.5 md:gap-2">
+                      {dayNames.map((day) => {
+                        const active = selectedScheduleDay === day;
+                        const programCount = weeklySchedule[day]?.length || 0;
+
+                        return (
+                          <button
+                            key={day}
+                            type="button"
+                            onClick={() => selectScheduleDay(day)}
+                            aria-pressed={active}
+                            className={`h-16 rounded-2xl border px-1 text-center transition md:h-20 md:px-3 ${
+                              active
+                                ? "border-sky-500 bg-sky-600 text-white shadow-sm"
+                                : "border-[#E6EEF9] bg-[#F8FBFF] text-slate-600 hover:bg-sky-50"
+                            }`}
+                          >
+                            <span className="block truncate text-[11px] font-bold md:text-sm">
+                              {day.slice(0, 3)}
+                            </span>
+
+                            <span
+                              className={`mt-1 inline-flex min-w-6 justify-center rounded-full px-1.5 py-0.5 text-[10px] font-semibold md:text-xs ${
+                                active
+                                  ? "bg-white/20 text-white"
+                                  : programCount > 0
+                                    ? "bg-red-50 text-red-600"
+                                    : "bg-white text-slate-400"
+                              }`}
+                            >
+                              {programCount}
+                            </span>
+                          </button>
+                        );
+                      })}
+                    </div>
+
+                    <div className="mt-4 rounded-2xl border border-[#E6EEF9] bg-[#F8FBFF] p-3">
+                      <div className="mb-3 flex items-center justify-between gap-3">
+                        <h3 className="text-sm font-bold text-slate-800 md:text-base">
+                          {selectedScheduleDay}
+                        </h3>
+
+                        <span className="rounded-full bg-white px-3 py-1 text-xs font-semibold text-slate-500">
+                          Kat seç
+                        </span>
+                      </div>
+
+                      {floorOptions.length === 0 ? (
+                        <div className="rounded-2xl bg-white p-4 text-sm text-slate-400">
+                          Haftalık görünüm için önce Mekan Yönetimi bölümünden kat ekleyin.
+                        </div>
+                      ) : (
+                        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4">
+                          {floorOptions.map((floor) => {
+                            const floorRoomIds = new Set(
+                              (roomsByFloor[floor] || []).map((room) => room.id)
+                            );
+                            const floorReservationCount = selectedDayReservations.filter(
+                              (reservation) => floorRoomIds.has(reservation.room_id)
+                            ).length;
+                            const active = selectedScheduleFloor === floor;
+
+                            return (
+                              <button
+                                key={floor}
+                                type="button"
+                                onClick={() => selectScheduleFloor(floor)}
+                                aria-pressed={active}
+                                className={`min-h-12 rounded-2xl border px-3 py-2 text-left transition ${
+                                  active
+                                    ? "border-sky-500 bg-white text-sky-700 shadow-sm"
+                                    : "border-[#E6EEF9] bg-white text-slate-600 hover:bg-sky-50"
+                                }`}
+                              >
+                                <span className="block truncate text-sm font-bold">
+                                  {floor}
+                                </span>
+
+                                <span className="mt-0.5 block text-xs text-slate-400">
+                                  {floorReservationCount} kullanım
+                                </span>
+                              </button>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+
+                    {selectedScheduleFloor && (
+                      <div className="mt-4 rounded-2xl border border-[#E6EEF9] bg-white p-3">
+                        <div className="mb-3 flex items-center justify-between gap-3">
                           <h3 className="text-sm font-bold text-slate-800 md:text-base">
-                            {day}
+                            {selectedScheduleFloor} Mekanları
                           </h3>
+
+                          <span className="rounded-full bg-[#F8FBFF] px-3 py-1 text-xs font-semibold text-slate-500">
+                            {selectedFloorRooms.length} mekan
+                          </span>
                         </div>
 
-                        <div className="p-4">
-                          {!weeklySchedule[day] ||
-                          weeklySchedule[day].length === 0 ? (
-                            <div className="rounded-2xl bg-white p-4 text-center text-sm text-slate-400">
-                              Program yok.
-                            </div>
-                          ) : (
-                            <div className="space-y-3">
-                              {weeklySchedule[day].map((reservation) => (
-                                <div
-                                  key={reservation.reservation_id}
-                                  className="rounded-2xl border border-[#E6EEF9] bg-white p-3 transition hover:shadow-sm"
+                        {selectedFloorRooms.length === 0 ? (
+                          <div className="rounded-2xl bg-[#F8FBFF] p-4 text-sm text-slate-400">
+                            Bu katta mekan yok.
+                          </div>
+                        ) : (
+                          <div className="grid grid-cols-2 gap-2 md:grid-cols-3 xl:grid-cols-4">
+                            {selectedFloorRooms.map((room) => {
+                              const roomReservations = selectedDayReservations.filter(
+                                (reservation) => reservation.room_id === room.id
+                              );
+                              const hasUsage = roomReservations.length > 0;
+                              const active = selectedScheduleRoomId === room.id;
+
+                              return (
+                                <button
+                                  key={room.id}
+                                  type="button"
+                                  onClick={() => setSelectedScheduleRoomId(room.id)}
+                                  aria-pressed={active}
+                                  className={`min-h-20 rounded-2xl border p-3 text-left transition ${
+                                    hasUsage
+                                      ? "border-red-200 bg-red-50 text-red-700 hover:bg-red-100"
+                                      : "border-[#E6EEF9] bg-[#F8FBFF] text-slate-600 hover:bg-sky-50"
+                                  } ${active ? "ring-2 ring-sky-300" : ""}`}
                                 >
-                                  <div className="mb-2 flex items-start justify-between gap-3">
-                                    <div className="min-w-0">
-                                      <p className="truncate text-sm font-semibold text-slate-800">
-                                        {reservation.room_name}
-                                      </p>
+                                  <span className="line-clamp-2 text-sm font-bold">
+                                    {room.name}
+                                  </span>
 
-                                      <p className="mt-0.5 truncate text-sm text-slate-600">
-                                        {reservation.title}
-                                      </p>
-                                    </div>
+                                  <span className="mt-2 block text-xs font-semibold">
+                                    {hasUsage ? `${roomReservations.length} program` : "Boş"}
+                                  </span>
+                                </button>
+                              );
+                            })}
+                          </div>
+                        )}
+                      </div>
+                    )}
 
-                                    <span className="shrink-0 rounded-full bg-sky-50 px-2.5 py-1 text-[11px] font-semibold text-sky-700">
-                                      {reservation.start_time.slice(0, 5)} -{" "}
-                                      {reservation.end_time.slice(0, 5)}
-                                    </span>
+                    {selectedScheduleRoom && (
+                      <div className="mt-4 rounded-2xl border border-[#E6EEF9] bg-[#F8FBFF] p-3">
+                        <div className="mb-3 flex items-center justify-between gap-3">
+                          <div className="min-w-0">
+                            <h3 className="truncate text-sm font-bold text-slate-800 md:text-base">
+                              {selectedScheduleRoom.name}
+                            </h3>
+
+                            <p className="mt-0.5 text-xs text-slate-400">
+                              {selectedScheduleDay} program durumu
+                            </p>
+                          </div>
+
+                          <span className={`shrink-0 rounded-full px-3 py-1 text-xs font-semibold ${
+                            selectedRoomReservations.length > 0
+                              ? "bg-red-100 text-red-700"
+                              : "bg-emerald-50 text-emerald-700"
+                          }`}>
+                            {selectedRoomReservations.length > 0 ? "Kullanım var" : "Boş"}
+                          </span>
+                        </div>
+
+                        {selectedRoomReservations.length === 0 ? (
+                          <div className="rounded-2xl bg-white p-4 text-sm text-slate-400">
+                            Bu mekan için seçili günde program bulunmuyor.
+                          </div>
+                        ) : (
+                          <div className="space-y-3">
+                            {selectedRoomReservations.map((reservation) => (
+                              <article
+                                key={reservation.reservation_id}
+                                className="rounded-2xl border border-[#E6EEF9] bg-white p-3"
+                              >
+                                <div className="mb-2 flex items-start justify-between gap-3">
+                                  <div className="min-w-0">
+                                    <p className="truncate text-sm font-semibold text-slate-800">
+                                      {reservation.title}
+                                    </p>
+
+                                    <p className="mt-0.5 text-xs text-slate-400">
+                                      {formatDate(reservation.start_date)} →{" "}
+                                      {formatDate(reservation.end_date)}
+                                    </p>
                                   </div>
 
-                                  <p className="text-xs text-slate-400">
-                                    {formatDate(reservation.start_date)} →{" "}
-                                    {formatDate(reservation.end_date)}
-                                  </p>
-
-                                  {reservation.description && (
-                                    <p className="mt-3 rounded-2xl bg-[#F8FBFF] p-3 text-sm leading-6 text-slate-500">
-                                      {reservation.description}
-                                    </p>
-                                  )}
-
-                                  {canReviewRoomRequests && (
-                                    <div className="mt-3 grid grid-cols-2 gap-2">
-                                      <button
-                                        onClick={() =>
-                                          startEditReservation(reservation)
-                                        }
-                                        className="h-10 rounded-2xl border border-[#E6EEF9] bg-white text-sm font-semibold text-slate-600 transition hover:bg-slate-50"
-                                      >
-                                        Düzenle
-                                      </button>
-
-                                      <button
-                                        onClick={() =>
-                                          handleDeleteReservation(reservation)
-                                        }
-                                        className="h-10 rounded-2xl bg-red-50 text-sm font-semibold text-red-600 transition hover:bg-red-100"
-                                      >
-                                        Sil
-                                      </button>
-                                    </div>
-                                  )}
+                                  <span className="shrink-0 rounded-full bg-sky-50 px-2.5 py-1 text-[11px] font-semibold text-sky-700">
+                                    {reservation.start_time.slice(0, 5)} -{" "}
+                                    {reservation.end_time.slice(0, 5)}
+                                  </span>
                                 </div>
-                              ))}
-                            </div>
-                          )}
-                        </div>
-                      </article>
-                    ))}
-                  </div>
-                </section>
+
+                                {reservation.description && (
+                                  <p className="rounded-2xl bg-[#F8FBFF] p-3 text-sm leading-6 text-slate-500">
+                                    {reservation.description}
+                                  </p>
+                                )}
+
+                                {canReviewRoomRequests && (
+                                  <div className="mt-3 grid grid-cols-2 gap-2">
+                                    <button
+                                      type="button"
+                                      onClick={() => startEditReservation(reservation)}
+                                      className="h-10 rounded-2xl border border-[#E6EEF9] bg-white text-sm font-semibold text-slate-600 transition hover:bg-slate-50"
+                                    >
+                                      Düzenle
+                                    </button>
+
+                                    <button
+                                      type="button"
+                                      onClick={() => handleDeleteReservation(reservation)}
+                                      className="h-10 rounded-2xl bg-red-50 text-sm font-semibold text-red-600 transition hover:bg-red-100"
+                                    >
+                                      Sil
+                                    </button>
+                                  </div>
+                                )}
+                              </article>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </section>
                 )}
               </>
             )}
