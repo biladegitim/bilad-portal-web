@@ -63,6 +63,7 @@ type Reservation = {
 const FLOOR_STORAGE_KEY = "bilad-room-floors";
 const ROOM_FLOOR_STORAGE_KEY = "bilad-room-floor-map";
 const unassignedFloor = "Kat seçilmemiş";
+type UsageStatus = "active" | "future" | "past" | "idle";
 
 function getRoomFloor(room: Room, roomFloorMap: Record<number, string>) {
   return room.floor_name || room.floor || roomFloorMap[room.id] || unassignedFloor;
@@ -80,6 +81,96 @@ function getTodayDateString() {
   const day = parts.find((part) => part.type === "day")?.value;
 
   return `${year}-${month}-${day}`;
+}
+
+function getCurrentIstanbulMinutes() {
+  const parts = new Intl.DateTimeFormat("en-GB", {
+    timeZone: "Europe/Istanbul",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  }).formatToParts(new Date());
+  const hour = Number(parts.find((part) => part.type === "hour")?.value || 0);
+  const minute = Number(parts.find((part) => part.type === "minute")?.value || 0);
+
+  return hour * 60 + minute;
+}
+
+function timeStringToMinutes(value: string) {
+  const match = value.match(/^(\d{1,2}):(\d{2})/);
+
+  if (match) {
+    return Number(match[1]) * 60 + Number(match[2]);
+  }
+
+  const date = new Date(value.endsWith("Z") ? value : `${value}Z`);
+
+  return date.getHours() * 60 + date.getMinutes();
+}
+
+function getReservationTimeStatus(reservation: Reservation): UsageStatus {
+  const now = getCurrentIstanbulMinutes();
+  const start = timeStringToMinutes(reservation.start_time);
+  const end = timeStringToMinutes(reservation.end_time);
+
+  if (end < start) {
+    if (now >= start || now < end) return "active";
+    return now < start ? "future" : "past";
+  }
+
+  if (now >= start && now < end) return "active";
+  if (now < start) return "future";
+
+  return "past";
+}
+
+function getRoomUsageStatus(reservations: Reservation[]) {
+  if (reservations.some((reservation) => getReservationTimeStatus(reservation) === "active")) {
+    return "active";
+  }
+
+  if (reservations.some((reservation) => getReservationTimeStatus(reservation) === "future")) {
+    return "future";
+  }
+
+  if (reservations.length > 0) return "past";
+
+  return "idle";
+}
+
+function getRoomUsageLabel(status: UsageStatus) {
+  if (status === "active") return "Kullanımda";
+  if (status === "future") return "Bugün sonra";
+  if (status === "past") return "Tamamlandı";
+
+  return "Boş";
+}
+
+function getRoomUsageClasses(status: UsageStatus) {
+  if (status === "active") {
+    return "border-red-200 bg-red-50 text-red-700 hover:bg-red-100";
+  }
+
+  if (status === "future") {
+    return "border-amber-200 bg-amber-50 text-amber-700 hover:bg-amber-100";
+  }
+
+  return "border-[#E6EEF9] bg-[#F8FBFF] text-slate-600 hover:bg-sky-50";
+}
+
+function getUsageBadgeClasses(status: UsageStatus) {
+  if (status === "active") return "bg-red-100 text-red-700";
+  if (status === "future") return "bg-amber-100 text-amber-700";
+  if (status === "past") return "bg-slate-100 text-slate-600";
+
+  return "bg-emerald-50 text-emerald-700";
+}
+
+function getReservationCardClasses(status: UsageStatus) {
+  if (status === "active") return "border-red-200 bg-red-50";
+  if (status === "future") return "border-amber-200 bg-amber-50";
+
+  return "border-[#E6EEF9] bg-white";
 }
 
 export default function Home() {
@@ -135,6 +226,7 @@ export default function Home() {
   const selectedRoomReservations = selectedRoomId
     ? reservationsByRoom[selectedRoomId] || []
     : [];
+  const selectedRoomUsageStatus = getRoomUsageStatus(selectedRoomReservations);
 
   useEffect(() => {
     const timer = setTimeout(() => setSplashLoading(false), 900);
@@ -237,7 +329,7 @@ export default function Home() {
   }
 
   function selectFloor(floor: string) {
-    setSelectedFloor((current) => (current === floor ? "" : floor));
+    setSelectedFloor(floor);
     setSelectedRoomId(null);
   }
 
@@ -444,33 +536,28 @@ export default function Home() {
                     Henüz kat veya mekan eklenmemiş.
                   </div>
                 ) : (
-                  <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+                  <div
+                    role="tablist"
+                    aria-label="Kat seçimi"
+                    className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1"
+                  >
                     {floorOptions.map((floor) => {
-                      const floorRooms = roomsByFloor[floor] || [];
-                      const usedRoomCount = floorRooms.filter(
-                        (room) => (reservationsByRoom[room.id] || []).length > 0
-                      ).length;
                       const active = selectedFloor === floor;
 
                       return (
                         <button
                           key={floor}
                           type="button"
+                          role="tab"
                           onClick={() => selectFloor(floor)}
-                          aria-pressed={active}
-                          className={`min-h-14 rounded-2xl border px-3 py-2 text-left transition ${
+                          aria-selected={active}
+                          className={`shrink-0 rounded-2xl border px-4 py-2.5 text-sm font-bold transition ${
                             active
                               ? "border-sky-500 bg-white text-sky-700 shadow-sm"
                               : "border-[#E6EEF9] bg-[#F8FBFF] text-slate-600 hover:bg-white"
                           }`}
                         >
-                          <span className="block truncate text-sm font-bold">
-                            {floor}
-                          </span>
-
-                          <span className="mt-1 block text-xs text-slate-400">
-                            {usedRoomCount} kullanımda
-                          </span>
+                          {floor}
                         </button>
                       );
                     })}
@@ -479,15 +566,9 @@ export default function Home() {
 
                 {selectedFloor && (
                   <div className="rounded-2xl border border-[#E6EEF9] bg-white p-3">
-                    <div className="mb-3 flex items-center justify-between gap-3">
-                      <h3 className="text-sm font-bold text-slate-800 md:text-base">
-                        {selectedFloor} Mekanları
-                      </h3>
-
-                      <span className="rounded-full bg-[#F8FBFF] px-3 py-1 text-xs font-semibold text-slate-500">
-                        {selectedFloorRooms.length} mekan
-                      </span>
-                    </div>
+                    <h3 className="mb-3 text-sm font-bold text-slate-800 md:text-base">
+                      {selectedFloor}
+                    </h3>
 
                     {selectedFloorRooms.length === 0 ? (
                       <div className="rounded-2xl bg-[#F8FBFF] p-4 text-sm text-slate-400">
@@ -497,7 +578,7 @@ export default function Home() {
                       <div className="grid grid-cols-2 gap-2 md:grid-cols-3">
                         {selectedFloorRooms.map((room) => {
                           const roomReservations = reservationsByRoom[room.id] || [];
-                          const hasUsage = roomReservations.length > 0;
+                          const roomStatus = getRoomUsageStatus(roomReservations);
                           const active = selectedRoomId === room.id;
 
                           return (
@@ -507,9 +588,7 @@ export default function Home() {
                               onClick={() => setSelectedRoomId(active ? null : room.id)}
                               aria-pressed={active}
                               className={`min-h-20 rounded-2xl border p-3 text-left transition ${
-                                hasUsage
-                                  ? "border-red-200 bg-red-50 text-red-700 hover:bg-red-100"
-                                  : "border-[#E6EEF9] bg-[#F8FBFF] text-slate-600 hover:bg-sky-50"
+                                getRoomUsageClasses(roomStatus)
                               } ${active ? "ring-2 ring-sky-300" : ""}`}
                             >
                               <span className="line-clamp-2 text-sm font-bold">
@@ -517,9 +596,7 @@ export default function Home() {
                               </span>
 
                               <span className="mt-2 block text-xs font-semibold">
-                                {hasUsage
-                                  ? `${roomReservations.length} program`
-                                  : "Boş"}
+                                {getRoomUsageLabel(roomStatus)}
                               </span>
                             </button>
                           );
@@ -544,12 +621,10 @@ export default function Home() {
 
                       <span
                         className={`shrink-0 rounded-full px-3 py-1 text-xs font-semibold ${
-                          selectedRoomReservations.length > 0
-                            ? "bg-red-100 text-red-700"
-                            : "bg-emerald-50 text-emerald-700"
+                          getUsageBadgeClasses(selectedRoomUsageStatus)
                         }`}
                       >
-                        {selectedRoomReservations.length > 0 ? "Kullanım var" : "Boş"}
+                        {getRoomUsageLabel(selectedRoomUsageStatus)}
                       </span>
                     </div>
 
@@ -559,42 +634,53 @@ export default function Home() {
                       </div>
                     ) : (
                       <div className="space-y-3">
-                        {selectedRoomReservations.map((reservation) => (
-                          <article
-                            key={reservation.reservation_id}
-                            className="rounded-2xl border border-[#E6EEF9] bg-white p-3"
-                          >
-                            <div className="mb-2 flex items-start justify-between gap-3">
-                              <div className="min-w-0">
-                                <p className="truncate text-sm font-semibold text-slate-800">
-                                  {reservation.title}
-                                </p>
+                        {selectedRoomReservations.map((reservation) => {
+                          const reservationStatus =
+                            getReservationTimeStatus(reservation);
 
-                                <p className="mt-0.5 text-xs text-slate-400">
-                                  {formatDate(reservation.start_date)} -{" "}
-                                  {formatDate(reservation.end_date)}
-                                </p>
+                          return (
+                            <article
+                              key={reservation.reservation_id}
+                              className={`rounded-2xl border p-3 ${getReservationCardClasses(
+                                reservationStatus
+                              )}`}
+                            >
+                              <div className="mb-2 flex items-start justify-between gap-3">
+                                <div className="min-w-0">
+                                  <p className="truncate text-sm font-semibold text-slate-800">
+                                    {reservation.title}
+                                  </p>
+
+                                  <p className="mt-0.5 text-xs text-slate-400">
+                                    {formatDate(reservation.start_date)} -{" "}
+                                    {formatDate(reservation.end_date)}
+                                  </p>
+                                </div>
+
+                                <span
+                                  className={`shrink-0 rounded-full px-2.5 py-1 text-[11px] font-semibold ${getUsageBadgeClasses(
+                                    reservationStatus
+                                  )}`}
+                                >
+                                  {formatRoomTime(reservation.start_time)} -{" "}
+                                  {formatRoomTime(reservation.end_time)}
+                                </span>
                               </div>
 
-                              <span className="shrink-0 rounded-full bg-sky-50 px-2.5 py-1 text-[11px] font-semibold text-sky-700">
-                                {formatRoomTime(reservation.start_time)} -{" "}
-                                {formatRoomTime(reservation.end_time)}
-                              </span>
-                            </div>
+                              {reservation.created_by_name && (
+                                <p className="mb-2 text-xs font-semibold text-slate-400">
+                                  Oluşturan: {reservation.created_by_name}
+                                </p>
+                              )}
 
-                            {reservation.created_by_name && (
-                              <p className="mb-2 text-xs font-semibold text-slate-400">
-                                Oluşturan: {reservation.created_by_name}
-                              </p>
-                            )}
-
-                            {reservation.description && (
-                              <p className="rounded-2xl bg-[#F8FBFF] p-3 text-sm leading-6 text-slate-500">
-                                {reservation.description}
-                              </p>
-                            )}
-                          </article>
-                        ))}
+                              {reservation.description && (
+                                <p className="rounded-2xl bg-white/70 p-3 text-sm leading-6 text-slate-500">
+                                  {reservation.description}
+                                </p>
+                              )}
+                            </article>
+                          );
+                        })}
                       </div>
                     )}
                   </div>
