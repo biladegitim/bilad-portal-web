@@ -12,6 +12,15 @@ type NotificationItem = {
 
 export async function fetchUnreadLeaveNotificationCount() {
   try {
+    const countResponse = await apiFetch("/notifications/leaves/unread-count", {
+      headers: authHeaders(),
+    });
+
+    if (countResponse.ok) {
+      const countData = await countResponse.json();
+      return countData.unread_count || 0;
+    }
+
     const response = await apiFetch("/notifications", {
       headers: authHeaders(),
     });
@@ -21,7 +30,8 @@ export async function fetchUnreadLeaveNotificationCount() {
     const data = await response.json();
 
     return (data.notifications || []).filter(
-      (item: NotificationItem) => item.link === "/leaves" && !item.is_read
+      (item: NotificationItem) =>
+        ["/leaves", "/my-leaves"].includes(item.link) && !item.is_read
     ).length;
   } catch {
     return 0;
