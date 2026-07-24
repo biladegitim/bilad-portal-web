@@ -437,7 +437,7 @@ export default function Home() {
               </div>
             </DashboardCard>
 
-            <DashboardCard title="Mekan Kullanımı" icon="▦">
+            <DashboardCard title="Mekan Kullanımı" icon="🏢">
               <div className="space-y-4">
                 {floorOptions.length === 0 ? (
                   <div className="rounded-2xl bg-[#F8FBFF] p-4 text-sm text-slate-400 md:text-base">
