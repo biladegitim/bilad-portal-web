@@ -181,6 +181,7 @@ export default function RoomsPage() {
     }
 
     resetRoomForm();
+    setOpenPanel(null);
     fetchData();
   }
 
@@ -222,6 +223,7 @@ export default function RoomsPage() {
     setSelectedWeekdays([String(reservation.weekday)]);
     setStartTime(reservation.start_time.slice(0, 5));
     setEndTime(reservation.end_time.slice(0, 5));
+    setOpenPanel("request");
   }
 
   async function handleReservationSubmit(e: React.FormEvent) {
@@ -262,6 +264,7 @@ export default function RoomsPage() {
 
     alert(editingId ? "Program güncellendi." : "Program talebi oluşturuldu. Onaylanınca haftalık planda görünecek.");
     resetReservationForm();
+    setOpenPanel(null);
     fetchData();
   }
 
@@ -414,7 +417,10 @@ export default function RoomsPage() {
 
                       <button
                         type="button"
-                        onClick={() => setOpenPanel(null)}
+                        onClick={() => {
+                          resetRoomForm();
+                          setOpenPanel(null);
+                        }}
                         className="rounded-2xl border border-[#E6EEF9] bg-white px-4 py-2 text-sm font-medium text-slate-600 transition hover:bg-slate-50"
                       >
                         Kapat
@@ -517,15 +523,16 @@ export default function RoomsPage() {
                         description="Mekan, gün ve saat bilgilerini girin. Talep onaylanınca haftalık plana eklenir."
                       />
 
-                      {editingId && (
-                        <button
-                          type="button"
-                          onClick={resetReservationForm}
-                          className="h-10 w-fit rounded-2xl border border-[#E6EEF9] bg-white px-4 text-sm font-semibold text-slate-600 transition hover:bg-slate-50"
-                        >
-                          Düzenlemeyi İptal Et
-                        </button>
-                      )}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          resetReservationForm();
+                          setOpenPanel(null);
+                        }}
+                        className="h-10 w-fit rounded-2xl border border-[#E6EEF9] bg-white px-4 text-sm font-semibold text-slate-600 transition hover:bg-slate-50"
+                      >
+                        {editingId ? "Düzenlemeyi İptal Et" : "Kapat"}
+                      </button>
                     </div>
 
                     <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
@@ -603,7 +610,10 @@ export default function RoomsPage() {
                       {editingId && (
                         <button
                           type="button"
-                          onClick={resetReservationForm}
+                          onClick={() => {
+                            resetReservationForm();
+                            setOpenPanel(null);
+                          }}
                           className="h-11 rounded-2xl border border-[#E6EEF9] bg-white px-6 text-sm font-semibold text-slate-600 transition hover:bg-slate-50"
                         >
                           Vazgeç
@@ -623,9 +633,19 @@ export default function RoomsPage() {
                         description="Onaylanınca haftalık plana eklenecek mekan programları."
                       />
 
-                      <span className="rounded-full bg-[#F8FBFF] px-3 py-1.5 text-xs font-semibold text-slate-500 md:text-sm">
-                        {pendingReservations.length} talep
-                      </span>
+                      <div className="flex items-center gap-2">
+                        <span className="rounded-full bg-[#F8FBFF] px-3 py-1.5 text-xs font-semibold text-slate-500 md:text-sm">
+                          {pendingReservations.length} talep
+                        </span>
+
+                        <button
+                          type="button"
+                          onClick={() => setOpenPanel(null)}
+                          className="rounded-2xl border border-[#E6EEF9] bg-white px-4 py-2 text-sm font-medium text-slate-600 transition hover:bg-slate-50"
+                        >
+                          Kapat
+                        </button>
+                      </div>
                     </div>
 
                     {pendingReservations.length === 0 ? (
@@ -708,7 +728,8 @@ export default function RoomsPage() {
                   </section>
                 )}
 
-                <section className="order-first rounded-2xl border border-[#E6EEF9] bg-white p-4 shadow-sm md:rounded-3xl md:p-5">
+                {openPanel === null && (
+                <section className="rounded-2xl border border-[#E6EEF9] bg-white p-4 shadow-sm md:rounded-3xl md:p-5">
                   <div className="mb-4 flex items-center justify-between gap-3">
                     <SectionTitle
                       icon="🗓️"
@@ -804,6 +825,7 @@ export default function RoomsPage() {
                     ))}
                   </div>
                 </section>
+                )}
               </>
             )}
           </div>

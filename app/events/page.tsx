@@ -146,12 +146,21 @@ export default function EventsPage() {
 
               <button
                 onClick={() => {
+                  if (showForm) {
+                    resetForm();
+                    return;
+                  }
+
                   resetForm();
                   setShowForm(true);
                 }}
-                className="ml-auto h-11 rounded-2xl bg-sky-600 px-5 text-sm font-semibold text-white shadow-sm transition hover:bg-sky-700"
+                className={
+                  showForm
+                    ? "ml-auto h-11 rounded-2xl border border-[#E6EEF9] bg-white px-5 text-sm font-semibold text-slate-600 transition hover:bg-slate-50"
+                    : "ml-auto h-11 rounded-2xl bg-sky-600 px-5 text-sm font-semibold text-white shadow-sm transition hover:bg-sky-700"
+                }
               >
-                + Etkinlik Ekle
+                {showForm ? "Formu Kapat" : "+ Etkinlik Ekle"}
               </button>
             </div>
 
@@ -253,6 +262,7 @@ export default function EventsPage() {
               </section>
             )}
 
+            {!showForm && (
             <section className="rounded-2xl border border-[#E6EEF9] bg-white p-4 shadow-sm md:rounded-3xl md:p-5">
               <div className="mb-4 flex items-center gap-3">
                 <span className="text-lg md:text-xl">📌</span>
@@ -326,6 +336,7 @@ export default function EventsPage() {
                 </div>
               )}
             </section>
+            )}
           </div>
         </div>
       </main>
