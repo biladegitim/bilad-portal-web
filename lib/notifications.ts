@@ -90,13 +90,24 @@ export async function subscribeToPushNotifications() {
   if (permission !== "granted") return;
 
   const registration = await getServiceWorkerRegistration();
+  const applicationServerKey = urlBase64ToUint8Array(keyData.public_key);
   const existingSubscription =
     await registration.pushManager.getSubscription();
+
+  if (
+    existingSubscription &&
+    !subscriptionUsesKey(existingSubscription, applicationServerKey)
+  ) {
+    await existingSubscription.unsubscribe().catch(() => false);
+  }
+
+  const currentSubscription =
+    await registration.pushManager.getSubscription();
   const subscription =
-    existingSubscription ||
+    currentSubscription ||
     (await registration.pushManager.subscribe({
       userVisibleOnly: true,
-      applicationServerKey: urlBase64ToUint8Array(keyData.public_key),
+      applicationServerKey,
     }));
 
   await apiFetch("/push/subscriptions", {
@@ -117,6 +128,23 @@ async function getServiceWorkerRegistration() {
   }
 
   return navigator.serviceWorker.register("/sw.js");
+}
+
+function subscriptionUsesKey(
+  subscription: PushSubscription,
+  applicationServerKey: Uint8Array
+) {
+  const existingKey = subscription.options.applicationServerKey;
+
+  if (!existingKey) return false;
+
+  const existingKeyArray = new Uint8Array(existingKey);
+
+  if (existingKeyArray.length !== applicationServerKey.length) return false;
+
+  return existingKeyArray.every(
+    (value, index) => value === applicationServerKey[index]
+  );
 }
 
 function urlBase64ToUint8Array(base64String: string) {
