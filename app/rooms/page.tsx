@@ -154,6 +154,9 @@ export default function RoomsPage() {
     return grouped;
   }, [floorOptions, rooms, roomFloorMap]);
 
+  const hasAssignableFloors = floorOptions.some(
+    (floor) => floor !== unassignedFloor
+  );
   const selectedDayReservations = weeklySchedule[selectedScheduleDay] || [];
   const selectedFloorRooms = selectedScheduleFloor
     ? roomsByFloor[selectedScheduleFloor] || []
@@ -276,6 +279,7 @@ export default function RoomsPage() {
         body: JSON.stringify({
           name: roomName,
           description: roomDescription,
+          floor: roomFloor,
         }),
       }
     );
@@ -569,7 +573,7 @@ export default function RoomsPage() {
                       <div className="flex flex-col gap-2 sm:flex-row">
                         <button
                           type="submit"
-                          disabled={floors.length === 0}
+                          disabled={!hasAssignableFloors}
                           className="h-11 rounded-2xl bg-sky-600 px-5 text-sm font-semibold text-white shadow-sm transition hover:bg-sky-700 disabled:cursor-not-allowed disabled:bg-slate-300"
                         >
                           {editingRoomId ? "Güncelle" : "Mekan Ekle"}
