@@ -896,7 +896,6 @@ export default function RoomsPage() {
                     <div className="grid grid-cols-7 gap-1.5 md:gap-2">
                       {dayNames.map((day) => {
                         const active = selectedScheduleDay === day;
-                        const programCount = weeklySchedule[day]?.length || 0;
 
                         return (
                           <button
@@ -904,7 +903,7 @@ export default function RoomsPage() {
                             type="button"
                             onClick={() => selectScheduleDay(day)}
                             aria-pressed={active}
-                            className={`h-16 rounded-2xl border px-1 text-center transition md:h-20 md:px-3 ${
+                            className={`flex h-16 items-center justify-center rounded-2xl border px-1 text-center transition md:h-20 md:px-3 ${
                               active
                                 ? "border-sky-500 bg-sky-600 text-white shadow-sm"
                                 : "border-[#E6EEF9] bg-[#F8FBFF] text-slate-600 hover:bg-sky-50"
@@ -912,18 +911,6 @@ export default function RoomsPage() {
                           >
                             <span className="block truncate text-[11px] font-bold md:text-sm">
                               {day.slice(0, 3)}
-                            </span>
-
-                            <span
-                              className={`mt-1 inline-flex min-w-6 justify-center rounded-full px-1.5 py-0.5 text-[10px] font-semibold md:text-xs ${
-                                active
-                                  ? "bg-white/20 text-white"
-                                  : programCount > 0
-                                    ? "bg-red-50 text-red-600"
-                                    : "bg-white text-slate-400"
-                              }`}
-                            >
-                              {programCount}
                             </span>
                           </button>
                         );
