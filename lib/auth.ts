@@ -4,6 +4,19 @@ export function getAccessToken() {
   return localStorage.getItem("access_token");
 }
 
+export function getStoredUserRole() {
+  if (typeof window === "undefined") return null;
+
+  try {
+    const user = localStorage.getItem("user");
+    if (!user) return null;
+
+    return JSON.parse(user)?.role || null;
+  } catch {
+    return null;
+  }
+}
+
 export function clearAuthSession() {
   if (typeof window === "undefined") return;
 

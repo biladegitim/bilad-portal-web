@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import PWARegister from "@/components/PWARegister";
+import QrRoleGuard from "@/components/QrRoleGuard";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -43,6 +44,7 @@ export default function RootLayout({
     <html lang="tr" data-scroll-behavior="smooth">
       <body>
         {children}
+        <QrRoleGuard />
         <PWARegister />
       </body>
     </html>

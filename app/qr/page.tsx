@@ -7,7 +7,7 @@ import Sidebar from "@/components/Sidebar";
 import { QRCodeSVG } from "qrcode.react";
 
 import { apiFetch } from "@/lib/api";
-import { authHeaders, getAccessToken } from "@/lib/auth";
+import { authHeaders, getAccessToken, getStoredUserRole } from "@/lib/auth";
 import { FRONTEND_URL } from "@/lib/config";
 
 type QRData = {
@@ -20,6 +20,7 @@ export default function QRPage() {
 
   const [qrData, setQrData] = useState<QRData | null>(null);
   const [loading, setLoading] = useState(true);
+  const isQrDisplay = getStoredUserRole() === "qr";
 
   async function fetchQR() {
     try {
@@ -68,11 +69,11 @@ export default function QRPage() {
 
   return (
     <div className="flex min-h-screen bg-[#F6F9FF]">
-      <Sidebar />
+      {!isQrDisplay && <Sidebar />}
 
-      <main className="min-w-0 flex-1 px-4 py-4 md:p-8">
-        <div className="mx-auto flex min-h-[calc(100vh-32px)] max-w-7xl min-w-0 flex-col">
-          <header className="mb-5 md:mb-8">
+      <main className={`min-w-0 flex-1 ${isQrDisplay ? "p-0" : "px-4 py-4 md:p-8"}`}>
+        <div className={`mx-auto flex min-w-0 flex-col ${isQrDisplay ? "min-h-screen max-w-none" : "min-h-[calc(100vh-32px)] max-w-7xl"}`}>
+          <header className={`mb-5 md:mb-8 ${isQrDisplay ? "hidden" : ""}`}>
             <div className="flex h-14 items-center justify-between md:h-16">
               <div className="h-11 w-11 md:hidden" />
             </div>
@@ -88,8 +89,8 @@ export default function QRPage() {
             </div>
           </header>
 
-          <section className="flex flex-1 items-center justify-center py-6 md:py-10">
-            <div className="w-full max-w-xl rounded-2xl border border-[#E6EEF9] bg-white p-4 text-center shadow-sm md:rounded-3xl md:p-5">
+          <section className={`flex flex-1 items-center justify-center ${isQrDisplay ? "p-6" : "py-6 md:py-10"}`}>
+            <div className={`w-full text-center ${isQrDisplay ? "max-w-3xl" : "max-w-xl rounded-2xl border border-[#E6EEF9] bg-white p-4 shadow-sm md:rounded-3xl md:p-5"}`}>
               <div className="mb-4 flex items-center justify-center gap-3">
                 <span className="text-lg leading-none md:text-xl">𖣯</span>
 
@@ -110,11 +111,11 @@ export default function QRPage() {
                 </div>
               ) : qrData ? (
                 <>
-                  <div className="mx-auto flex w-full max-w-[320px] justify-center rounded-2xl border border-[#E6EEF9] bg-[#F8FBFF] p-4 sm:p-5 md:p-6">
+                  <div className={`mx-auto flex w-full justify-center rounded-2xl border border-[#E6EEF9] p-4 sm:p-5 md:p-6 ${isQrDisplay ? "max-w-[620px] bg-white" : "max-w-[320px] bg-[#F8FBFF]"}`}>
                     <QRCodeSVG
                       value={`${FRONTEND_URL}/qr-scan?token=${qrData.token}`}
                       size={280}
-                      className="h-auto w-full max-w-full"
+                      className={`h-auto w-full max-w-full ${isQrDisplay ? "max-w-[560px]" : ""}`}
                     />
                   </div>
 

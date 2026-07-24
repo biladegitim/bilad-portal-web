@@ -48,7 +48,7 @@ export default function LoginPage() {
 
       await subscribeToPushNotifications().catch(() => {});
 
-      window.location.href = "/";
+      window.location.href = data.user?.role === "qr" ? "/qr" : "/";
     } catch (err) {
       console.error("LOGIN ERROR:", err);
 
