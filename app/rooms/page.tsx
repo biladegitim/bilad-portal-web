@@ -79,6 +79,7 @@ export default function RoomsPage() {
   const [loading, setLoading] = useState(true);
   const [isSuperAdmin, setIsSuperAdmin] = useState(false);
   const [canReviewRoomRequests, setCanReviewRoomRequests] = useState(false);
+  const [openPanel, setOpenPanel] = useState<"rooms" | "request" | "pending" | null>(null);
 
   const [roomName, setRoomName] = useState("");
   const [roomDescription, setRoomDescription] = useState("");
@@ -366,8 +367,16 @@ export default function RoomsPage() {
             ) : (
               <>
                 {isSuperAdmin && (
-                  <section className="rounded-2xl border border-[#E6EEF9] bg-white p-4 shadow-sm md:rounded-3xl md:p-5">
-                    <div className="mb-4">
+                  <ActionPanel
+                    icon="🏢"
+                    title={editingRoomId ? "Mekan Düzenle" : "Mekan Yönetimi"}
+                    description="Kat planında kullanılacak mekanları oluşturun."
+                    open={openPanel === "rooms"}
+                    onToggle={() =>
+                      setOpenPanel(openPanel === "rooms" ? null : "rooms")
+                    }
+                  >
+                    <div className="mb-4 hidden">
                       <SectionTitle
                         icon="🏢"
                         title={editingRoomId ? "Mekan Düzenle" : "Mekan Yönetimi"}
@@ -458,10 +467,18 @@ export default function RoomsPage() {
                         ))
                       )}
                     </div>
-                  </section>
+                  </ActionPanel>
                 )}
 
-                <section className="rounded-2xl border border-[#E6EEF9] bg-white p-4 shadow-sm md:rounded-3xl md:p-5">
+                <ActionPanel
+                  icon="📌"
+                  title={editingId ? "Program Düzenle" : "Program Talebi Oluştur"}
+                  description="Mekan, gün ve saat bilgilerini girin. Talep onaylanınca haftalık plana eklenir."
+                  open={openPanel === "request"}
+                  onToggle={() =>
+                    setOpenPanel(openPanel === "request" ? null : "request")
+                  }
+                >
                   <form onSubmit={handleReservationSubmit} className="space-y-4">
                     <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
                       <SectionTitle
@@ -564,11 +581,20 @@ export default function RoomsPage() {
                       )}
                     </div>
                   </form>
-                </section>
+                </ActionPanel>
 
                 {canReviewRoomRequests && (
-                  <section className="rounded-2xl border border-[#E6EEF9] bg-white p-4 shadow-sm md:rounded-3xl md:p-5">
-                    <div className="mb-4 flex items-center justify-between gap-3">
+                  <ActionPanel
+                    icon="✅"
+                    title="Bekleyen Program Talepleri"
+                    description="Onaylanınca haftalık plana eklenecek mekan programları."
+                    badge={`${pendingReservations.length} talep`}
+                    open={openPanel === "pending"}
+                    onToggle={() =>
+                      setOpenPanel(openPanel === "pending" ? null : "pending")
+                    }
+                  >
+                    <div className="mb-4 hidden items-center justify-between gap-3">
                       <SectionTitle
                         icon="✅"
                         title="Bekleyen Program Talepleri"
@@ -657,7 +683,7 @@ export default function RoomsPage() {
                         ))}
                       </div>
                     )}
-                  </section>
+                  </ActionPanel>
                 )}
 
                 <section className="order-first rounded-2xl border border-[#E6EEF9] bg-white p-4 shadow-sm md:rounded-3xl md:p-5">
@@ -790,6 +816,66 @@ function InfoBox({ children }: { children: React.ReactNode }) {
   return (
     <section className="rounded-2xl border border-[#E6EEF9] bg-white p-4 text-sm text-slate-400 shadow-sm md:rounded-3xl md:p-5 md:text-base">
       {children}
+    </section>
+  );
+}
+
+function ActionPanel({
+  icon,
+  title,
+  description,
+  badge,
+  open,
+  onToggle,
+  children,
+}: {
+  icon: string;
+  title: string;
+  description: string;
+  badge?: string;
+  open: boolean;
+  onToggle: () => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <section className="rounded-2xl border border-[#E6EEF9] bg-white shadow-sm md:rounded-3xl">
+      <button
+        type="button"
+        onClick={onToggle}
+        className="flex w-full items-center justify-between gap-3 p-4 text-left transition hover:bg-[#F8FBFF] md:p-5"
+        aria-expanded={open}
+      >
+        <div className="flex min-w-0 items-center gap-3">
+          <span className="text-lg leading-none md:text-xl">{icon}</span>
+
+          <div className="min-w-0">
+            <h2 className="truncate text-base font-bold text-slate-800 md:text-lg">
+              {title}
+            </h2>
+            <p className="line-clamp-1 text-sm text-slate-400">
+              {description}
+            </p>
+          </div>
+        </div>
+
+        <div className="flex shrink-0 items-center gap-2">
+          {badge && (
+            <span className="rounded-full bg-[#F8FBFF] px-3 py-1.5 text-xs font-semibold text-slate-500 md:text-sm">
+              {badge}
+            </span>
+          )}
+
+          <span className="rounded-full bg-sky-50 px-3 py-1.5 text-xs font-semibold text-sky-700">
+            {open ? "Kapat" : "Aç"}
+          </span>
+        </div>
+      </button>
+
+      {open && (
+        <div className="border-t border-[#E6EEF9] p-4 md:p-5">
+          {children}
+        </div>
+      )}
     </section>
   );
 }
