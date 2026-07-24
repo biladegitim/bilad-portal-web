@@ -9,9 +9,24 @@ export function getStoredUserRole() {
 
   try {
     const user = localStorage.getItem("user");
-    if (!user) return null;
+    if (user) {
+      const storedRole = JSON.parse(user)?.role;
 
-    return JSON.parse(user)?.role || null;
+      if (storedRole) return storedRole;
+    }
+  } catch {}
+
+  try {
+    const token = getAccessToken();
+    if (!token) return null;
+
+    const [, payload] = token.split(".");
+    if (!payload) return null;
+
+    const normalizedPayload = payload.replace(/-/g, "+").replace(/_/g, "/");
+    const decodedPayload = JSON.parse(window.atob(normalizedPayload));
+
+    return decodedPayload?.role || null;
   } catch {
     return null;
   }

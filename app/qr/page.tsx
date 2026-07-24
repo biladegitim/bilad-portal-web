@@ -7,7 +7,7 @@ import Sidebar from "@/components/Sidebar";
 import { QRCodeSVG } from "qrcode.react";
 
 import { apiFetch } from "@/lib/api";
-import { authHeaders, getAccessToken, getStoredUserRole } from "@/lib/auth";
+import { authHeaders, clearAuthSession, getAccessToken, getStoredUserRole } from "@/lib/auth";
 import { FRONTEND_URL } from "@/lib/config";
 
 type QRData = {
@@ -67,9 +67,23 @@ export default function QRPage() {
     });
   }
 
+  function logout() {
+    clearAuthSession();
+    router.push("/login");
+  }
+
   return (
     <div className="flex min-h-screen bg-[#F6F9FF]">
       {!isQrDisplay && <Sidebar />}
+      {isQrDisplay && (
+        <button
+          type="button"
+          onClick={logout}
+          className="fixed right-4 top-4 z-50 rounded-2xl bg-white/90 px-4 py-2 text-sm font-semibold text-red-600 shadow-sm transition hover:bg-white"
+        >
+          Çıkış Yap
+        </button>
+      )}
 
       <main className={`min-w-0 flex-1 ${isQrDisplay ? "p-0" : "px-4 py-4 md:p-8"}`}>
         <div className={`mx-auto flex min-w-0 flex-col ${isQrDisplay ? "min-h-screen max-w-none" : "min-h-[calc(100vh-32px)] max-w-7xl"}`}>
