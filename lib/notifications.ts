@@ -89,7 +89,7 @@ export async function subscribeToPushNotifications() {
 
   if (permission !== "granted") return;
 
-  const registration = await navigator.serviceWorker.ready;
+  const registration = await getServiceWorkerRegistration();
   const existingSubscription =
     await registration.pushManager.getSubscription();
   const subscription =
@@ -107,6 +107,16 @@ export async function subscribeToPushNotifications() {
     },
     body: JSON.stringify(subscription.toJSON()),
   });
+}
+
+async function getServiceWorkerRegistration() {
+  const existingRegistration = await navigator.serviceWorker.getRegistration();
+
+  if (existingRegistration) {
+    return existingRegistration;
+  }
+
+  return navigator.serviceWorker.register("/sw.js");
 }
 
 function urlBase64ToUint8Array(base64String: string) {

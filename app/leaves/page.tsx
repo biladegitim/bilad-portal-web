@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import Sidebar from "@/components/Sidebar";
@@ -30,7 +30,7 @@ export default function LeavesPage() {
   const [endTime, setEndTime] = useState("");
   const [reason, setReason] = useState("");
 
-  async function fetchLeaves() {
+  const fetchLeaves = useCallback(async () => {
     try {
       const myResponse = await apiFetch("/my-leaves", {
         headers: authHeaders(),
@@ -53,7 +53,7 @@ export default function LeavesPage() {
     } finally {
       setLoading(false);
     }
-  }
+  }, []);
 
   useEffect(() => {
   const token = getAccessToken();
@@ -66,7 +66,28 @@ export default function LeavesPage() {
   markLeaveNotificationsRead();
 
   fetchLeaves();
-}, [router]);
+
+  const refreshTimer = window.setInterval(fetchLeaves, 30000);
+
+  function handleFocus() {
+    fetchLeaves();
+  }
+
+  function handleVisibilityChange() {
+    if (document.visibilityState === "visible") {
+      fetchLeaves();
+    }
+  }
+
+  window.addEventListener("focus", handleFocus);
+  document.addEventListener("visibilitychange", handleVisibilityChange);
+
+  return () => {
+    window.clearInterval(refreshTimer);
+    window.removeEventListener("focus", handleFocus);
+    document.removeEventListener("visibilitychange", handleVisibilityChange);
+  };
+}, [fetchLeaves, router]);
 
   async function handleCreateLeave(e: React.FormEvent) {
     e.preventDefault();
