@@ -66,7 +66,13 @@ export async function updateAppBadge(count: number) {
   } catch {}
 }
 
-export async function subscribeToPushNotifications() {
+type SubscribeOptions = {
+  requestPermission?: boolean;
+};
+
+export async function subscribeToPushNotifications(
+  options: SubscribeOptions = {}
+) {
   if (typeof window === "undefined") return;
   if (!("serviceWorker" in navigator)) return;
   if (!("PushManager" in window)) return;
@@ -82,9 +88,12 @@ export async function subscribeToPushNotifications() {
 
   if (!keyData.enabled || !keyData.public_key) return;
 
+  const shouldRequestPermission = options.requestPermission ?? true;
   const permission =
     Notification.permission === "default"
-      ? await Notification.requestPermission()
+      ? shouldRequestPermission
+        ? await Notification.requestPermission()
+        : Notification.permission
       : Notification.permission;
 
   if (permission !== "granted") return;

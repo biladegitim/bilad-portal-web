@@ -14,7 +14,7 @@ export default function PWARegister() {
         .register("/sw.js")
         .then(async () => {
           if (getAccessToken()) {
-            await subscribeToPushNotifications();
+            await subscribeToPushNotifications({ requestPermission: false });
           }
         })
         .catch(() => {

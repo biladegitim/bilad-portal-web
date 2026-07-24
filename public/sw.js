@@ -1,4 +1,4 @@
-const CACHE_NAME = "bilad-portal-pwa-v1";
+const CACHE_NAME = "bilad-portal-pwa-v2";
 const CORE_ASSETS = [
   "/offline.html",
   "/manifest.json",

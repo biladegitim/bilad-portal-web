@@ -46,7 +46,9 @@ export default function LoginPage() {
         localStorage.setItem("user", JSON.stringify(data.user));
       }
 
-      await subscribeToPushNotifications().catch(() => {});
+      await subscribeToPushNotifications({ requestPermission: false }).catch(
+        () => {}
+      );
 
       window.location.href = data.user?.role === "qr" ? "/qr" : "/";
     } catch (err) {
