@@ -35,5 +35,31 @@ export function useLeaveNotifications() {
     return () => clearTimeout(timer);
   }, [pathname, refresh]);
 
+  useEffect(() => {
+    const timer = window.setInterval(refresh, 30000);
+
+    return () => window.clearInterval(timer);
+  }, [refresh]);
+
+  useEffect(() => {
+    function handleFocus() {
+      refresh();
+    }
+
+    function handleVisibilityChange() {
+      if (document.visibilityState === "visible") {
+        refresh();
+      }
+    }
+
+    window.addEventListener("focus", handleFocus);
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+
+    return () => {
+      window.removeEventListener("focus", handleFocus);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
+  }, [refresh]);
+
   return { count, refresh };
 }
