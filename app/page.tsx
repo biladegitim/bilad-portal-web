@@ -576,112 +576,120 @@ export default function Home() {
                         Bu katta mekan yok.
                       </div>
                     ) : (
-                      <div className="grid grid-cols-2 gap-2 md:grid-cols-3">
-                        {selectedFloorRooms.map((room) => {
-                          const roomReservations = reservationsByRoom[room.id] || [];
-                          const roomStatus = getRoomUsageStatus(roomReservations);
-                          const active = selectedRoomId === room.id;
+                      <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_minmax(260px,0.95fr)]">
+                        <div className="grid grid-cols-2 gap-2 md:grid-cols-3 lg:grid-cols-2">
+                          {selectedFloorRooms.map((room) => {
+                            const roomReservations = reservationsByRoom[room.id] || [];
+                            const roomStatus = getRoomUsageStatus(roomReservations);
+                            const active = selectedRoomId === room.id;
 
-                          return (
-                            <button
-                              key={room.id}
-                              type="button"
-                              onClick={() => setSelectedRoomId(active ? null : room.id)}
-                              aria-pressed={active}
-                              className={`min-h-20 rounded-2xl border p-3 text-left transition ${
-                                getRoomUsageClasses(roomStatus)
-                              } ${active ? "ring-2 ring-sky-300" : ""}`}
-                            >
-                              <span className="line-clamp-2 text-sm font-bold">
-                                {room.name}
-                              </span>
+                            return (
+                              <button
+                                key={room.id}
+                                type="button"
+                                onClick={() => setSelectedRoomId(room.id)}
+                                aria-pressed={active}
+                                className={`min-h-20 rounded-2xl border p-3 text-left transition ${
+                                  getRoomUsageClasses(roomStatus)
+                                } ${active ? "ring-2 ring-sky-300" : ""}`}
+                              >
+                                <span className="line-clamp-2 text-sm font-bold">
+                                  {room.name}
+                                </span>
 
-                              <span className="mt-2 block text-xs font-semibold">
-                                {getRoomUsageLabel(roomStatus)}
-                              </span>
-                            </button>
-                          );
-                        })}
-                      </div>
-                    )}
-                  </div>
-                )}
+                                <span className="mt-2 block text-xs font-semibold">
+                                  {getRoomUsageLabel(roomStatus)}
+                                </span>
+                              </button>
+                            );
+                          })}
+                        </div>
 
-                {selectedRoom && (
-                  <div className="rounded-2xl border border-[#E6EEF9] bg-[#F8FBFF] p-3">
-                    <div className="mb-3 flex items-center justify-between gap-3">
-                      <div className="min-w-0">
-                        <h3 className="truncate text-sm font-bold text-slate-800 md:text-base">
-                          {selectedRoom.name}
-                        </h3>
-
-                        <p className="mt-0.5 text-xs text-slate-400">
-                          Bugünkü kullanım bilgisi
-                        </p>
-                      </div>
-
-                      <span
-                        className={`shrink-0 rounded-full px-3 py-1 text-xs font-semibold ${
-                          getUsageBadgeClasses(selectedRoomUsageStatus)
-                        }`}
-                      >
-                        {getRoomUsageLabel(selectedRoomUsageStatus)}
-                      </span>
-                    </div>
-
-                    {selectedRoomReservations.length === 0 ? (
-                      <div className="rounded-2xl bg-white p-4 text-sm text-slate-400">
-                        Bu mekan bugün kullanılmıyor.
-                      </div>
-                    ) : (
-                      <div className="space-y-3">
-                        {selectedRoomReservations.map((reservation) => {
-                          const reservationStatus =
-                            getReservationTimeStatus(reservation);
-
-                          return (
-                            <article
-                              key={reservation.reservation_id}
-                              className={`rounded-2xl border p-3 ${getReservationCardClasses(
-                                reservationStatus
-                              )}`}
-                            >
-                              <div className="mb-2 flex items-start justify-between gap-3">
+                        <div className="min-h-36 rounded-2xl border border-[#E6EEF9] bg-[#F8FBFF] p-3">
+                          {selectedRoom ? (
+                            <>
+                              <div className="mb-3 flex items-center justify-between gap-3">
                                 <div className="min-w-0">
-                                  <p className="truncate text-sm font-semibold text-slate-800">
-                                    {reservation.title}
-                                  </p>
+                                  <h3 className="truncate text-sm font-bold text-slate-800 md:text-base">
+                                    {selectedRoom.name}
+                                  </h3>
 
                                   <p className="mt-0.5 text-xs text-slate-400">
-                                    {formatDate(reservation.start_date)} -{" "}
-                                    {formatDate(reservation.end_date)}
+                                    Bugünkü kullanım bilgisi
                                   </p>
                                 </div>
 
                                 <span
-                                  className={`shrink-0 rounded-full px-2.5 py-1 text-[11px] font-semibold ${getUsageBadgeClasses(
-                                    reservationStatus
-                                  )}`}
+                                  className={`shrink-0 rounded-full px-3 py-1 text-xs font-semibold ${
+                                    getUsageBadgeClasses(selectedRoomUsageStatus)
+                                  }`}
                                 >
-                                  {formatRoomTime(reservation.start_time)} -{" "}
-                                  {formatRoomTime(reservation.end_time)}
+                                  {getRoomUsageLabel(selectedRoomUsageStatus)}
                                 </span>
                               </div>
 
-                              {reservation.created_by_name && (
-                                <p className="mb-2 text-xs font-semibold text-slate-400">
-                                  Oluşturan: {reservation.created_by_name}
-                                </p>
-                              )}
+                              {selectedRoomReservations.length === 0 ? (
+                                <div className="rounded-2xl bg-white p-4 text-sm text-slate-400">
+                                  Bu mekan bugün kullanılmıyor.
+                                </div>
+                              ) : (
+                                <div className="space-y-3">
+                                  {selectedRoomReservations.map((reservation) => {
+                                    const reservationStatus =
+                                      getReservationTimeStatus(reservation);
 
-                              {reservation.description && (
-                                <p className="rounded-2xl bg-white/70 p-3 text-sm leading-6 text-slate-500">
-                                  {reservation.description}
-                                </p>
+                                    return (
+                                      <article
+                                        key={reservation.reservation_id}
+                                        className={`rounded-2xl border p-3 ${getReservationCardClasses(
+                                          reservationStatus
+                                        )}`}
+                                      >
+                                        <div className="mb-2 flex items-start justify-between gap-3">
+                                          <div className="min-w-0">
+                                            <p className="truncate text-sm font-semibold text-slate-800">
+                                              {reservation.title}
+                                            </p>
+
+                                            <p className="mt-0.5 text-xs text-slate-400">
+                                              {formatDate(reservation.start_date)} -{" "}
+                                              {formatDate(reservation.end_date)}
+                                            </p>
+                                          </div>
+
+                                          <span
+                                            className={`shrink-0 rounded-full px-2.5 py-1 text-[11px] font-semibold ${getUsageBadgeClasses(
+                                              reservationStatus
+                                            )}`}
+                                          >
+                                            {formatRoomTime(reservation.start_time)} -{" "}
+                                            {formatRoomTime(reservation.end_time)}
+                                          </span>
+                                        </div>
+
+                                        {reservation.created_by_name && (
+                                          <p className="mb-2 text-xs font-semibold text-slate-400">
+                                            Oluşturan: {reservation.created_by_name}
+                                          </p>
+                                        )}
+
+                                        {reservation.description && (
+                                          <p className="rounded-2xl bg-white/70 p-3 text-sm leading-6 text-slate-500">
+                                            {reservation.description}
+                                          </p>
+                                        )}
+                                      </article>
+                                    );
+                                  })}
+                                </div>
                               )}
-                            </article>
-                          );
-                        })}
+                            </>
+                          ) : (
+                            <div className="flex h-full min-h-32 items-center justify-center rounded-2xl bg-white p-4 text-center text-sm text-slate-400">
+                              Kullanım bilgisini görmek için bir mekan seçin.
+                            </div>
+                          )}
+                        </div>
                       </div>
                     )}
                   </div>
