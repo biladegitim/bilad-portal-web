@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { QRCodeSVG } from "qrcode.react";
 
@@ -30,13 +30,6 @@ type HomeData = {
   }[];
 };
 
-type TodayRecord = {
-  id: number;
-  record_type: string;
-  record_time: string;
-  source: string;
-};
-
 type ProfileData = {
   full_name: string;
   email: string;
@@ -44,13 +37,104 @@ type ProfileData = {
   profile_photo?: string | null;
 };
 
+type Room = {
+  id: number;
+  name: string;
+  description: string | null;
+  floor?: string | null;
+  floor_name?: string | null;
+};
+
+type Reservation = {
+  reservation_id: number;
+  room_id: number;
+  room_name: string;
+  title: string;
+  description: string | null;
+  start_time: string;
+  end_time: string;
+  start_date: string;
+  end_date: string;
+  weekday: number;
+  created_by_name?: string;
+  status?: string;
+};
+
+const FLOOR_STORAGE_KEY = "bilad-room-floors";
+const ROOM_FLOOR_STORAGE_KEY = "bilad-room-floor-map";
+const unassignedFloor = "Kat seçilmemiş";
+
+function getRoomFloor(room: Room, roomFloorMap: Record<number, string>) {
+  return room.floor_name || room.floor || roomFloorMap[room.id] || unassignedFloor;
+}
+
+function getTodayDateString() {
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Europe/Istanbul",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(new Date());
+  const year = parts.find((part) => part.type === "year")?.value;
+  const month = parts.find((part) => part.type === "month")?.value;
+  const day = parts.find((part) => part.type === "day")?.value;
+
+  return `${year}-${month}-${day}`;
+}
+
 export default function Home() {
   const router = useRouter();
 
   const [data, setData] = useState<HomeData | null>(null);
-  const [todayRecords, setTodayRecords] = useState<TodayRecord[]>([]);
+  const [rooms, setRooms] = useState<Room[]>([]);
+  const [todayRoomReservations, setTodayRoomReservations] = useState<Reservation[]>([]);
+  const [floors, setFloors] = useState<string[]>([]);
+  const [roomFloorMap, setRoomFloorMap] = useState<Record<number, string>>({});
+  const [selectedFloor, setSelectedFloor] = useState("");
+  const [selectedRoomId, setSelectedRoomId] = useState<number | null>(null);
   const [profile, setProfile] = useState<ProfileData | null>(null);
   const [splashLoading, setSplashLoading] = useState(true);
+
+  const floorOptions = useMemo(() => {
+    const names = new Set(floors);
+
+    rooms.forEach((room) => {
+      names.add(getRoomFloor(room, roomFloorMap));
+    });
+
+    return Array.from(names);
+  }, [floors, rooms, roomFloorMap]);
+
+  const roomsByFloor = useMemo(() => {
+    const grouped = Object.fromEntries(
+      floorOptions.map((floor) => [floor, [] as Room[]])
+    );
+
+    rooms.forEach((room) => {
+      const floor = getRoomFloor(room, roomFloorMap);
+      if (!grouped[floor]) grouped[floor] = [];
+      grouped[floor].push(room);
+    });
+
+    return grouped;
+  }, [floorOptions, rooms, roomFloorMap]);
+
+  const reservationsByRoom = useMemo(() => {
+    const grouped: Record<number, Reservation[]> = {};
+
+    todayRoomReservations.forEach((reservation) => {
+      if (!grouped[reservation.room_id]) grouped[reservation.room_id] = [];
+      grouped[reservation.room_id].push(reservation);
+    });
+
+    return grouped;
+  }, [todayRoomReservations]);
+
+  const selectedFloorRooms = selectedFloor ? roomsByFloor[selectedFloor] || [] : [];
+  const selectedRoom = rooms.find((room) => room.id === selectedRoomId);
+  const selectedRoomReservations = selectedRoomId
+    ? reservationsByRoom[selectedRoomId] || []
+    : [];
 
   useEffect(() => {
     const timer = setTimeout(() => setSplashLoading(false), 900);
@@ -82,19 +166,42 @@ export default function Home() {
         })
       );
 
-    apiFetch("/attendance/today", {
+    try {
+      const storedFloors = JSON.parse(
+        localStorage.getItem(FLOOR_STORAGE_KEY) || "[]"
+      );
+      const storedRoomFloors = JSON.parse(
+        localStorage.getItem(ROOM_FLOOR_STORAGE_KEY) || "{}"
+      );
+
+      setFloors(Array.isArray(storedFloors) ? storedFloors : []);
+      setRoomFloorMap(storedRoomFloors || {});
+    } catch {
+      setFloors([]);
+      setRoomFloorMap({});
+    }
+
+    apiFetch("/rooms", {
       headers: authHeaders(),
     })
       .then((res) => {
         if (!res.ok) return null;
         return res.json();
       })
-      .then((attendanceData) => {
-        if (attendanceData) {
-          setTodayRecords(attendanceData.records || []);
-        }
+      .then((roomsData) => setRooms(roomsData?.rooms || []))
+      .catch(() => setRooms([]));
+
+    apiFetch(`/room-reservations/by-date?selected_date=${getTodayDateString()}`, {
+      headers: authHeaders(),
+    })
+      .then((res) => {
+        if (!res.ok) return null;
+        return res.json();
       })
-      .catch(() => setTodayRecords([]));
+      .then((reservationData) =>
+        setTodayRoomReservations(reservationData?.reservations || [])
+      )
+      .catch(() => setTodayRoomReservations([]));
 
     return () => clearTimeout(timer);
   }, [router]);
@@ -113,6 +220,25 @@ export default function Home() {
       minute: "2-digit",
       timeZone: "Europe/Istanbul",
     });
+  }
+
+  function formatRoomTime(value: string) {
+    if (/^\d{2}:\d{2}/.test(value)) return value.slice(0, 5);
+
+    return formatTime(value);
+  }
+
+  function formatDate(date: string) {
+    return new Date(date).toLocaleDateString("tr-TR", {
+      day: "numeric",
+      month: "long",
+      year: "numeric",
+    });
+  }
+
+  function selectFloor(floor: string) {
+    setSelectedFloor((current) => (current === floor ? "" : floor));
+    setSelectedRoomId(null);
   }
 
   function logout() {
@@ -311,29 +437,167 @@ export default function Home() {
               </div>
             </DashboardCard>
 
-            <DashboardCard title="Bugünkü Giriş-Çıkışım" icon="📊">
-              <div className="space-y-2.5 md:space-y-3">
-                {todayRecords.length === 0 ? (
+            <DashboardCard title="Mekan Kullanımı" icon="▦">
+              <div className="space-y-4">
+                {floorOptions.length === 0 ? (
                   <div className="rounded-2xl bg-[#F8FBFF] p-4 text-sm text-slate-400 md:text-base">
-                    Bugün henüz kayıt yok.
+                    Henüz kat veya mekan eklenmemiş.
                   </div>
                 ) : (
-                  todayRecords.map((record) => (
-                    <div
-                      key={record.id}
-                      className="flex items-center justify-between rounded-2xl border border-[#E6EEF9] bg-[#F8FBFF] p-3.5 md:p-4"
-                    >
-                      <span className="text-sm font-medium text-slate-700 md:text-base">
-                        {record.record_type === "check_in"
-                          ? "Giriş"
-                          : "Çıkış"}
-                      </span>
+                  <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+                    {floorOptions.map((floor) => {
+                      const floorRooms = roomsByFloor[floor] || [];
+                      const usedRoomCount = floorRooms.filter(
+                        (room) => (reservationsByRoom[room.id] || []).length > 0
+                      ).length;
+                      const active = selectedFloor === floor;
 
-                      <span className="text-sm text-slate-500 md:text-base">
-                        {formatTime(record.record_time)}
+                      return (
+                        <button
+                          key={floor}
+                          type="button"
+                          onClick={() => selectFloor(floor)}
+                          aria-pressed={active}
+                          className={`min-h-14 rounded-2xl border px-3 py-2 text-left transition ${
+                            active
+                              ? "border-sky-500 bg-white text-sky-700 shadow-sm"
+                              : "border-[#E6EEF9] bg-[#F8FBFF] text-slate-600 hover:bg-white"
+                          }`}
+                        >
+                          <span className="block truncate text-sm font-bold">
+                            {floor}
+                          </span>
+
+                          <span className="mt-1 block text-xs text-slate-400">
+                            {usedRoomCount} kullanımda
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+
+                {selectedFloor && (
+                  <div className="rounded-2xl border border-[#E6EEF9] bg-white p-3">
+                    <div className="mb-3 flex items-center justify-between gap-3">
+                      <h3 className="text-sm font-bold text-slate-800 md:text-base">
+                        {selectedFloor} Mekanları
+                      </h3>
+
+                      <span className="rounded-full bg-[#F8FBFF] px-3 py-1 text-xs font-semibold text-slate-500">
+                        {selectedFloorRooms.length} mekan
                       </span>
                     </div>
-                  ))
+
+                    {selectedFloorRooms.length === 0 ? (
+                      <div className="rounded-2xl bg-[#F8FBFF] p-4 text-sm text-slate-400">
+                        Bu katta mekan yok.
+                      </div>
+                    ) : (
+                      <div className="grid grid-cols-2 gap-2 md:grid-cols-3">
+                        {selectedFloorRooms.map((room) => {
+                          const roomReservations = reservationsByRoom[room.id] || [];
+                          const hasUsage = roomReservations.length > 0;
+                          const active = selectedRoomId === room.id;
+
+                          return (
+                            <button
+                              key={room.id}
+                              type="button"
+                              onClick={() => setSelectedRoomId(active ? null : room.id)}
+                              aria-pressed={active}
+                              className={`min-h-20 rounded-2xl border p-3 text-left transition ${
+                                hasUsage
+                                  ? "border-red-200 bg-red-50 text-red-700 hover:bg-red-100"
+                                  : "border-[#E6EEF9] bg-[#F8FBFF] text-slate-600 hover:bg-sky-50"
+                              } ${active ? "ring-2 ring-sky-300" : ""}`}
+                            >
+                              <span className="line-clamp-2 text-sm font-bold">
+                                {room.name}
+                              </span>
+
+                              <span className="mt-2 block text-xs font-semibold">
+                                {hasUsage
+                                  ? `${roomReservations.length} program`
+                                  : "Boş"}
+                              </span>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {selectedRoom && (
+                  <div className="rounded-2xl border border-[#E6EEF9] bg-[#F8FBFF] p-3">
+                    <div className="mb-3 flex items-center justify-between gap-3">
+                      <div className="min-w-0">
+                        <h3 className="truncate text-sm font-bold text-slate-800 md:text-base">
+                          {selectedRoom.name}
+                        </h3>
+
+                        <p className="mt-0.5 text-xs text-slate-400">
+                          Bugünkü kullanım bilgisi
+                        </p>
+                      </div>
+
+                      <span
+                        className={`shrink-0 rounded-full px-3 py-1 text-xs font-semibold ${
+                          selectedRoomReservations.length > 0
+                            ? "bg-red-100 text-red-700"
+                            : "bg-emerald-50 text-emerald-700"
+                        }`}
+                      >
+                        {selectedRoomReservations.length > 0 ? "Kullanım var" : "Boş"}
+                      </span>
+                    </div>
+
+                    {selectedRoomReservations.length === 0 ? (
+                      <div className="rounded-2xl bg-white p-4 text-sm text-slate-400">
+                        Bu mekan bugün kullanılmıyor.
+                      </div>
+                    ) : (
+                      <div className="space-y-3">
+                        {selectedRoomReservations.map((reservation) => (
+                          <article
+                            key={reservation.reservation_id}
+                            className="rounded-2xl border border-[#E6EEF9] bg-white p-3"
+                          >
+                            <div className="mb-2 flex items-start justify-between gap-3">
+                              <div className="min-w-0">
+                                <p className="truncate text-sm font-semibold text-slate-800">
+                                  {reservation.title}
+                                </p>
+
+                                <p className="mt-0.5 text-xs text-slate-400">
+                                  {formatDate(reservation.start_date)} -{" "}
+                                  {formatDate(reservation.end_date)}
+                                </p>
+                              </div>
+
+                              <span className="shrink-0 rounded-full bg-sky-50 px-2.5 py-1 text-[11px] font-semibold text-sky-700">
+                                {formatRoomTime(reservation.start_time)} -{" "}
+                                {formatRoomTime(reservation.end_time)}
+                              </span>
+                            </div>
+
+                            {reservation.created_by_name && (
+                              <p className="mb-2 text-xs font-semibold text-slate-400">
+                                Oluşturan: {reservation.created_by_name}
+                              </p>
+                            )}
+
+                            {reservation.description && (
+                              <p className="rounded-2xl bg-[#F8FBFF] p-3 text-sm leading-6 text-slate-500">
+                                {reservation.description}
+                              </p>
+                            )}
+                          </article>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                 )}
               </div>
             </DashboardCard>
