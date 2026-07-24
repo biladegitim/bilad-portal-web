@@ -140,7 +140,7 @@ function getRoomUsageStatus(reservations: Reservation[]) {
 
 function getRoomUsageLabel(status: UsageStatus) {
   if (status === "active") return "Kullanımda";
-  if (status === "future") return "Bugün sonra";
+  if (status === "future") return "Kullanılacak";
   if (status === "past") return "Tamamlandı";
 
   return "Boş";
