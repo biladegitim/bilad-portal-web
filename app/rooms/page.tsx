@@ -478,48 +478,7 @@ export default function RoomsPage() {
       <main className="flex-1 px-4 py-4 md:p-8">
         <div className="mx-auto max-w-7xl">
           <header className="mb-5 md:mb-8">
-            <div className="flex h-14 items-center justify-between md:h-16">
-              <div className="h-11 w-11 md:hidden" />
-
-              {!loading && (
-                <div className="ml-auto flex flex-wrap justify-end gap-2">
-                  {isSuperAdmin && (
-                    <HeaderActionButton
-                      active={openPanel === "rooms"}
-                      onClick={() =>
-                        setOpenPanel(openPanel === "rooms" ? null : "rooms")
-                      }
-                    >
-                      {openPanel === "rooms" ? "Mekanları Kapat" : "+ Mekan Yönetimi"}
-                    </HeaderActionButton>
-                  )}
-
-                  <HeaderActionButton
-                    active={openPanel === "request"}
-                    onClick={() =>
-                      setOpenPanel(openPanel === "request" ? null : "request")
-                    }
-                  >
-                    {openPanel === "request" ? "Talebi Kapat" : "+ Program Talebi"}
-                  </HeaderActionButton>
-
-                  {canReviewRoomRequests && (
-                    <HeaderActionButton
-                      active={openPanel === "pending"}
-                      onClick={() =>
-                        setOpenPanel(openPanel === "pending" ? null : "pending")
-                      }
-                    >
-                      {openPanel === "pending"
-                        ? "Talepleri Kapat"
-                        : `Bekleyen Talepler (${pendingReservations.length})`}
-                    </HeaderActionButton>
-                  )}
-                </div>
-              )}
-            </div>
-
-            <div className="mt-5 md:mt-6">
+            <div>
               <h1 className="text-2xl font-bold tracking-tight text-slate-800 md:text-3xl">
                 Kat Planı
               </h1>
@@ -920,6 +879,7 @@ export default function RoomsPage() {
                 )}
 
                 {openPanel === null && (
+                  <>
                   <section className="rounded-2xl border border-[#E6EEF9] bg-white p-4 shadow-sm md:rounded-3xl md:p-5">
                     <div className="mb-4 flex items-center justify-between gap-3">
                       <SectionTitle
@@ -1157,6 +1117,41 @@ export default function RoomsPage() {
                       </div>
                     )}
                   </section>
+                  <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
+                    {isSuperAdmin && (
+                      <HeaderActionButton
+                        active={openPanel === "rooms"}
+                        onClick={() =>
+                          setOpenPanel(openPanel === "rooms" ? null : "rooms")
+                        }
+                      >
+                        {openPanel === "rooms" ? "Mekanları Kapat" : "+ Mekan Yönetimi"}
+                      </HeaderActionButton>
+                    )}
+
+                    <HeaderActionButton
+                      active={openPanel === "request"}
+                      onClick={() =>
+                        setOpenPanel(openPanel === "request" ? null : "request")
+                      }
+                    >
+                      {openPanel === "request" ? "Talebi Kapat" : "+ Program Talebi"}
+                    </HeaderActionButton>
+
+                    {canReviewRoomRequests && (
+                      <HeaderActionButton
+                        active={openPanel === "pending"}
+                        onClick={() =>
+                          setOpenPanel(openPanel === "pending" ? null : "pending")
+                        }
+                      >
+                        {openPanel === "pending"
+                          ? "Talepleri Kapat"
+                          : `Bekleyen Talepler (${pendingReservations.length})`}
+                      </HeaderActionButton>
+                    )}
+                  </div>
+                  </>
                 )}
               </>
             )}
