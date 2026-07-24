@@ -8,6 +8,7 @@ import Sidebar from "@/components/Sidebar";
 import { apiFetch } from "@/lib/api";
 import { canApproveRooms, canManageRooms, fetchProfileAccess } from "@/lib/access";
 import { authHeaders, getAccessToken, jsonAuthHeaders } from "@/lib/auth";
+import { sortFloors } from "@/lib/floors";
 
 type Room = {
   id: number;
@@ -137,7 +138,7 @@ export default function RoomsPage() {
       names.add(floor);
     });
 
-    return Array.from(names);
+    return sortFloors(Array.from(names), unassignedFloor);
   }, [floors, rooms, roomFloorMap]);
 
   const roomsByFloor = useMemo(() => {

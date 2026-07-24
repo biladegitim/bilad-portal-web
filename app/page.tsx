@@ -8,6 +8,7 @@ import Sidebar from "@/components/Sidebar";
 import SplashScreen from "@/components/SplashScreen";
 import { apiFetch, apiUrl } from "@/lib/api";
 import { authHeaders, getAccessToken } from "@/lib/auth";
+import { sortFloors } from "@/lib/floors";
 
 type HomeData = {
   upcoming_events: {
@@ -193,7 +194,7 @@ export default function Home() {
       names.add(getRoomFloor(room, roomFloorMap));
     });
 
-    return Array.from(names);
+    return sortFloors(Array.from(names), unassignedFloor);
   }, [floors, rooms, roomFloorMap]);
 
   const roomsByFloor = useMemo(() => {
