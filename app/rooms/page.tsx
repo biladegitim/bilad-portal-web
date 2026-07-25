@@ -415,29 +415,15 @@ export default function RoomsPage() {
   async function handleDeleteReservation(reservation: Reservation) {
     if (!confirm("Bu program ve seçili tüm günleri silinsin mi?")) return;
 
-    const matchingReservations = Object.values(weeklySchedule)
-      .flat()
-      .filter(
-        (item) =>
-          item.room_id === reservation.room_id &&
-          item.title === reservation.title &&
-          item.description === reservation.description &&
-          item.start_date === reservation.start_date &&
-          item.end_date === reservation.end_date &&
-          item.start_time === reservation.start_time &&
-          item.end_time === reservation.end_time
-      );
-
-    const responses = await Promise.all(
-      matchingReservations.map((item) =>
-        apiFetch(`/room-reservations/${item.reservation_id}`, {
-          method: "DELETE",
-          headers: authHeaders(),
-        })
-      )
+    const response = await apiFetch(
+      `/room-reservations/${reservation.reservation_id}`,
+      {
+        method: "DELETE",
+        headers: authHeaders(),
+      }
     );
 
-    if (responses.some((response) => !response.ok)) {
+    if (!response.ok) {
       alert("Program silinemedi");
       return;
     }
