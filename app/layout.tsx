@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import PWARegister from "@/components/PWARegister";
+import PushNotificationPrompt from "@/components/PushNotificationPrompt";
 import QrRoleGuard from "@/components/QrRoleGuard";
 import "./globals.css";
 
@@ -46,6 +47,7 @@ export default function RootLayout({
         {children}
         <QrRoleGuard />
         <PWARegister />
+        <PushNotificationPrompt />
       </body>
     </html>
   );
