@@ -441,7 +441,7 @@ export default function Home() {
           </header>
 
           <section className="grid grid-cols-1 gap-4 xl:grid-cols-2">
-            <DashboardCard title="Günün Menüsü" icon="🍽">
+            <DashboardCard title="Günün Menüsü" icon="🍽" className="order-1">
               <div className="min-h-32 rounded-2xl border border-[#E6EEF9] bg-[#F8FBFF] p-4 md:min-h-40">
                 {data.today_menu ? (
                   <p className="whitespace-pre-line text-sm leading-7 text-slate-700 md:text-base md:leading-8">
@@ -455,7 +455,7 @@ export default function Home() {
               </div>
             </DashboardCard>
 
-            <DashboardCard title="Yaklaşan Etkinlikler" icon="📌">
+            <DashboardCard title="Yaklaşan Etkinlikler" icon="📌" className="order-3">
               {data.upcoming_events.length === 0 ? (
                 <div className="rounded-2xl bg-[#F8FBFF] p-4 text-sm text-slate-400 md:text-base">
                   Yaklaşan etkinlik yok.
@@ -504,7 +504,7 @@ export default function Home() {
               )}
             </DashboardCard>
 
-            <DashboardCard title="Bugün İzinli Olanlar" icon="📝">
+            <DashboardCard title="Bugün İzinli Olanlar" icon="📝" className="order-4">
               <div className="space-y-2.5 md:space-y-3">
                 {data.today_approved_leaves.length === 0 ? (
                   <div className="rounded-2xl bg-[#F8FBFF] p-4 text-sm text-slate-400 md:text-base">
@@ -530,7 +530,7 @@ export default function Home() {
               </div>
             </DashboardCard>
 
-            <DashboardCard title="Mekan Kullanımı" icon="🏢">
+            <DashboardCard title="Mekan Kullanımı" icon="🏢" className="order-2">
               <div className="space-y-4">
                 {floorOptions.length === 0 ? (
                   <div className="rounded-2xl bg-[#F8FBFF] p-4 text-sm text-slate-400 md:text-base">
@@ -706,14 +706,18 @@ export default function Home() {
 function DashboardCard({
   title,
   icon,
+  className = "",
   children,
 }: {
   title: string;
   icon: string;
+  className?: string;
   children: React.ReactNode;
 }) {
   return (
-    <div className="rounded-2xl border border-[#E6EEF9] bg-white p-4 shadow-sm md:rounded-3xl md:p-5">
+    <div
+      className={`rounded-2xl border border-[#E6EEF9] bg-white p-4 shadow-sm md:rounded-3xl md:p-5 ${className}`}
+    >
       <div className="mb-4 flex items-center gap-3 md:mb-5">
         <span className="text-lg leading-none md:text-xl">{icon}</span>
 
