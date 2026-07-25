@@ -458,7 +458,7 @@ export default function RoomsPage() {
   }
 
   function selectScheduleFloor(floor: string) {
-    setSelectedScheduleFloor(floor);
+    setSelectedScheduleFloor((current) => (current === floor ? "" : floor));
     setSelectedScheduleRoomId(null);
   }
 
@@ -989,7 +989,11 @@ export default function RoomsPage() {
                                 <button
                                   key={room.id}
                                   type="button"
-                                  onClick={() => setSelectedScheduleRoomId(room.id)}
+                                  onClick={() =>
+                                    setSelectedScheduleRoomId((current) =>
+                                      current === room.id ? null : room.id
+                                    )
+                                  }
                                   aria-pressed={active}
                                   className={`min-h-20 rounded-2xl border p-3 text-left transition ${
                                     hasUsage
