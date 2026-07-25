@@ -540,7 +540,7 @@ export default function Home() {
                   <div
                     role="tablist"
                     aria-label="Kat seçimi"
-                    className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1"
+                    className="scrollbar-hidden -mx-1 flex gap-2 overflow-x-auto px-1 pb-1"
                   >
                     {floorOptions.map((floor) => {
                       const active = selectedFloor === floor;
