@@ -330,7 +330,7 @@ export default function Home() {
   }
 
   function selectFloor(floor: string) {
-    setSelectedFloor(floor);
+    setSelectedFloor((current) => (current === floor ? "" : floor));
     setSelectedRoomId(null);
   }
 
@@ -587,7 +587,11 @@ export default function Home() {
                               <button
                                 key={room.id}
                                 type="button"
-                                onClick={() => setSelectedRoomId(room.id)}
+                                onClick={() =>
+                                  setSelectedRoomId((current) =>
+                                    current === room.id ? null : room.id
+                                  )
+                                }
                                 aria-pressed={active}
                                 className={`min-h-20 rounded-2xl border p-3 text-left transition ${
                                   getRoomUsageClasses(roomStatus)
