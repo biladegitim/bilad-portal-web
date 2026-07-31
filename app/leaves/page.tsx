@@ -404,7 +404,7 @@ export default function LeavesPage() {
                 <div className="mb-4 flex items-center justify-between gap-3">
                   <SectionTitle
                     icon="📆"
-                    title="Kalan Yıllık İzin Hakkı"
+                    title="Yıllık İzin Yönetimi"
                     description="Yıllık hak her takvim yılında yeniden uygulanır."
                   />
                 </div>
