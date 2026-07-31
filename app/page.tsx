@@ -321,6 +321,20 @@ export default function Home() {
     return formatTime(value);
   }
 
+  function formatLeaveTime(value: string) {
+    const timePart = value.split("T")[1] || value.split(" ")[1];
+    const [hour, minute] = (timePart || "").split(":");
+
+    if (hour && minute) {
+      return `${hour.padStart(2, "0")}:${minute.padStart(2, "0")}`;
+    }
+
+    return new Date(value).toLocaleTimeString("tr-TR", {
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  }
+
   function formatDate(date: string) {
     return new Date(date).toLocaleDateString("tr-TR", {
       day: "numeric",
@@ -521,8 +535,8 @@ export default function Home() {
                       </p>
 
                       <p className="mt-1 text-xs text-slate-500 md:text-sm">
-                        {formatTime(leave.start_time)} -{" "}
-                        {formatTime(leave.end_time)}
+                        {formatLeaveTime(leave.start_time)} -{" "}
+                        {formatLeaveTime(leave.end_time)}
                       </p>
                     </div>
                   ))
