@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import Sidebar from "@/components/Sidebar";
 
 import { apiFetch } from "@/lib/api";
+import { fetchProfileAccess } from "@/lib/access";
 import { authHeaders, getAccessToken, jsonAuthHeaders } from "@/lib/auth";
 import { formatLocalDateTime } from "@/lib/dateTime";
 import { markLeaveNotificationsRead } from "@/lib/notifications";
@@ -58,6 +59,7 @@ export default function LeavesPage() {
   const [annualLeaveBalances, setAnnualLeaveBalances] = useState<AnnualLeaveBalance[]>([]);
   const [myAnnualLeaveBalance, setMyAnnualLeaveBalance] = useState<AnnualLeaveBalance | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isSuperAdmin, setIsSuperAdmin] = useState(false);
 
   const [startTime, setStartTime] = useState("");
   const [endTime, setEndTime] = useState("");
@@ -127,6 +129,10 @@ export default function LeavesPage() {
   }
 
   markLeaveNotificationsRead();
+
+  fetchProfileAccess().then((access) => {
+    setIsSuperAdmin(access?.role === "super_admin" || access?.is_super_admin === true);
+  });
 
   fetchLeaves();
 
@@ -513,6 +519,9 @@ export default function LeavesPage() {
                       statusLabel={statusLabel}
                       statusClass={statusClass}
                       formatDate={formatDate}
+                      admin={isSuperAdmin}
+                      onApprove={isSuperAdmin ? () => updateLeaveStatus(leave.id, "approve") : undefined}
+                      onReject={isSuperAdmin ? () => updateLeaveStatus(leave.id, "reject") : undefined}
                       onDelete={() => deleteLeave(leave.id)}
                     />
                   ))}
@@ -607,7 +616,7 @@ function LeaveCard({
       <div className="mb-4 flex items-start justify-between gap-3">
         <div className="min-w-0">
           <h3 className="truncate text-sm font-semibold text-slate-800 md:text-base">
-            {admin ? leave.user_name || "Personel" : "İzin Talebi"}
+            {admin ? leave.user_name || "İzin Talebi" : "İzin Talebi"}
           </h3>
 
           <p className="mt-1 text-xs leading-5 text-slate-500 md:text-sm">
