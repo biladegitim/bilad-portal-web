@@ -25,6 +25,7 @@ type LeaveItem = {
 type AnnualLeaveBalance = {
   user_id: number;
   full_name: string;
+  year: number;
   total_days: number;
   used_days: number;
   pending_days: number;
@@ -154,6 +155,14 @@ export default function LeavesPage() {
     const myBalance = myAnnualLeaveBalance;
 
     if (leaveType === "annual" && myBalance) {
+      const start = new Date(startTime);
+      const end = new Date(endTime);
+
+      if (start.getFullYear() !== end.getFullYear()) {
+        alert("Yıllık izin talebi tek takvim yılı içinde olmalıdır");
+        return;
+      }
+
       const requestedDays = calculateLeaveDays(startTime, endTime);
 
       if (requestedDays > myBalance.available_days) {
@@ -302,7 +311,7 @@ export default function LeavesPage() {
 
                     {myAnnualLeaveBalance && (
                       <p className="mt-2 text-xs text-slate-500 md:text-sm">
-                        Kalan yıllık izin hakkınız:{" "}
+                        {myAnnualLeaveBalance.year} yılı kalan yıllık izin hakkınız:{" "}
                         <span className="font-semibold text-sky-700">
                           {myAnnualLeaveBalance.remaining_days} gün
                         </span>
@@ -342,7 +351,7 @@ export default function LeavesPage() {
                   <SectionTitle
                     icon="📆"
                     title="Kalan Yıllık İzin Hakkı"
-                    description="Yıllık izin hakkı, kullanılan ve bekleyen günler."
+                    description="Yıllık hak her takvim yılında yeniden uygulanır."
                   />
                 </div>
 
@@ -354,6 +363,10 @@ export default function LeavesPage() {
                     >
                       <p className="truncate text-sm font-semibold text-slate-800 md:text-base">
                         {balance.full_name}
+                      </p>
+
+                      <p className="mt-1 text-xs font-semibold text-sky-600 md:text-sm">
+                        {balance.year} yılı
                       </p>
 
                       <div className="mt-3 grid grid-cols-2 gap-2 text-xs text-slate-500 md:text-sm">
