@@ -17,6 +17,7 @@ type UserItem = {
   is_active: boolean;
   work_start_time: string | null;
   work_end_time: string | null;
+  annual_leave_days: number;
 };
 
 const permissionOptions = [
@@ -44,6 +45,7 @@ export default function UsersPage() {
   const [editSupervisorId, setEditSupervisorId] = useState("");
   const [editWorkStart, setEditWorkStart] = useState("");
   const [editWorkEnd, setEditWorkEnd] = useState("");
+  const [editAnnualLeaveDays, setEditAnnualLeaveDays] = useState("");
   const [selectedPermissions, setSelectedPermissions] = useState<string[]>([]);
 
   const fetchUsers = useCallback(async () => {
@@ -109,6 +111,7 @@ export default function UsersPage() {
     setEditSupervisorId(user.supervisor_id ? String(user.supervisor_id) : "");
     setEditWorkStart(user.work_start_time ? user.work_start_time.slice(0, 5) : "");
     setEditWorkEnd(user.work_end_time ? user.work_end_time.slice(0, 5) : "");
+    setEditAnnualLeaveDays(String(user.annual_leave_days || 0));
 
     const response = await apiFetch(`/users/${user.id}/permissions`, {
       headers: authHeaders(),
@@ -179,7 +182,18 @@ export default function UsersPage() {
         workResponseOk = workResponse.ok;
       }
 
-      if (!roleResponse.ok || !orgResponse.ok || !workResponseOk) {
+      const annualLeaveResponse = await apiFetch(
+        `/users/${editingUser.id}/annual-leave`,
+        {
+          method: "PATCH",
+          headers: jsonAuthHeaders(),
+          body: JSON.stringify({
+            annual_leave_days: Number(editAnnualLeaveDays || 0),
+          }),
+        }
+      );
+
+      if (!roleResponse.ok || !orgResponse.ok || !workResponseOk || !annualLeaveResponse.ok) {
         alert("Kullanıcı güncellenemedi. Backend endpointlerini kontrol edin.");
         return;
       }
@@ -438,6 +452,13 @@ export default function UsersPage() {
                       setValue={setEditWorkEnd}
                     />
 
+                    <LabeledInput
+                      label="Yıllık İzin Gün Sayısı"
+                      type="number"
+                      value={editAnnualLeaveDays}
+                      setValue={setEditAnnualLeaveDays}
+                    />
+
                     <div>
                       <label className="mb-1.5 block text-xs font-semibold text-slate-500">
                         Yetkiler
@@ -523,6 +544,7 @@ export default function UsersPage() {
                           <th className="p-4 font-semibold">Konum</th>
                           <th className="p-4 font-semibold">Rol</th>
                           <th className="p-4 font-semibold">Mesai</th>
+                          <th className="p-4 font-semibold">Yıllık İzin</th>
                           <th className="p-4 font-semibold">Durum</th>
                           <th className="p-4 font-semibold">İşlem</th>
                         </tr>
@@ -559,6 +581,10 @@ export default function UsersPage() {
                             <td className="p-4 text-slate-600">
                               {user.work_start_time?.slice(0, 5) || "-"} /{" "}
                               {user.work_end_time?.slice(0, 5) || "-"}
+                            </td>
+
+                            <td className="p-4 text-slate-600">
+                              {user.annual_leave_days || 0} gün
                             </td>
 
                             <td className="p-4">
@@ -636,6 +662,7 @@ export default function UsersPage() {
                             Mesai: {user.work_start_time?.slice(0, 5) || "-"}{" "}
                             / {user.work_end_time?.slice(0, 5) || "-"}
                           </p>
+                          <p>Yıllık izin: {user.annual_leave_days || 0} gün</p>
                         </div>
 
                         <div className="mt-4 grid grid-cols-2 gap-3">

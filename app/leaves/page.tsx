@@ -17,19 +17,49 @@ type LeaveItem = {
   start_time: string;
   end_time: string;
   reason: string;
+  leave_type: string;
+  day_count: number;
   status: string;
 };
+
+type AnnualLeaveBalance = {
+  user_id: number;
+  full_name: string;
+  total_days: number;
+  used_days: number;
+  pending_days: number;
+  remaining_days: number;
+  available_days: number;
+};
+
+function calculateLeaveDays(startTime: string, endTime: string) {
+  if (!startTime || !endTime) return 0;
+
+  const start = new Date(startTime);
+  const end = new Date(endTime);
+
+  if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) return 0;
+
+  const startDay = new Date(start.getFullYear(), start.getMonth(), start.getDate());
+  const endDay = new Date(end.getFullYear(), end.getMonth(), end.getDate());
+  const dayMs = 24 * 60 * 60 * 1000;
+
+  return Math.max(Math.floor((endDay.getTime() - startDay.getTime()) / dayMs) + 1, 1);
+}
 
 export default function LeavesPage() {
   const router = useRouter();
 
   const [myLeaves, setMyLeaves] = useState<LeaveItem[]>([]);
   const [teamLeaves, setTeamLeaves] = useState<LeaveItem[]>([]);
+  const [annualLeaveBalances, setAnnualLeaveBalances] = useState<AnnualLeaveBalance[]>([]);
+  const [myAnnualLeaveBalance, setMyAnnualLeaveBalance] = useState<AnnualLeaveBalance | null>(null);
   const [loading, setLoading] = useState(true);
 
   const [startTime, setStartTime] = useState("");
   const [endTime, setEndTime] = useState("");
   const [reason, setReason] = useState("");
+  const [leaveType, setLeaveType] = useState("standard");
 
   const fetchLeaves = useCallback(async () => {
     try {
@@ -39,6 +69,15 @@ export default function LeavesPage() {
 
       const myData = await myResponse.json();
       setMyLeaves(myData.leaves || []);
+      setMyAnnualLeaveBalance(
+        myData.annual_leave_balance
+          ? {
+              user_id: 0,
+              full_name: "Ben",
+              ...myData.annual_leave_balance,
+            }
+          : null
+      );
 
       const teamResponse = await apiFetch("/team-leaves", {
         headers: authHeaders(),
@@ -48,9 +87,28 @@ export default function LeavesPage() {
         const teamData = await teamResponse.json();
         setTeamLeaves(teamData.leaves || []);
       }
+
+      const balanceResponse = await apiFetch("/annual-leave-balances", {
+        headers: authHeaders(),
+      });
+
+      if (balanceResponse.ok) {
+        const balanceData = await balanceResponse.json();
+        setAnnualLeaveBalances(balanceData.balances || []);
+      } else if (myData.annual_leave_balance) {
+        setAnnualLeaveBalances([
+          {
+            user_id: 0,
+            full_name: "Ben",
+            ...myData.annual_leave_balance,
+          },
+        ]);
+      }
     } catch {
       setMyLeaves([]);
       setTeamLeaves([]);
+      setAnnualLeaveBalances([]);
+      setMyAnnualLeaveBalance(null);
     } finally {
       setLoading(false);
     }
@@ -93,6 +151,21 @@ export default function LeavesPage() {
   async function handleCreateLeave(e: React.FormEvent) {
     e.preventDefault();
 
+    const myBalance = myAnnualLeaveBalance;
+
+    if (leaveType === "annual" && myBalance) {
+      const requestedDays = calculateLeaveDays(startTime, endTime);
+
+      if (requestedDays > myBalance.available_days) {
+        alert(
+          myBalance.available_days <= 0
+            ? "Yıllık izin hakkınız kalmadı"
+            : `Yıllık izin hakkınız ${myBalance.available_days} gün kaldı`
+        );
+        return;
+      }
+    }
+
     const response = await apiFetch("/leave-requests", {
       method: "POST",
       headers: jsonAuthHeaders(),
@@ -100,6 +173,7 @@ export default function LeavesPage() {
         start_time: startTime,
         end_time: endTime,
         reason,
+        leave_type: leaveType,
       }),
     });
 
@@ -111,6 +185,7 @@ export default function LeavesPage() {
     setStartTime("");
     setEndTime("");
     setReason("");
+    setLeaveType("standard");
     fetchLeaves();
   }
 
@@ -213,6 +288,31 @@ export default function LeavesPage() {
                   />
 
                   <div className="lg:col-span-2">
+                    <label className="flex items-center gap-2 rounded-2xl border border-[#E6EEF9] bg-[#F8FBFF] p-3 text-sm font-semibold text-slate-700">
+                      <input
+                        type="checkbox"
+                        checked={leaveType === "annual"}
+                        onChange={(e) =>
+                          setLeaveType(e.target.checked ? "annual" : "standard")
+                        }
+                        className="h-4 w-4 rounded border-slate-300"
+                      />
+                      Yıllık izin
+                    </label>
+
+                    {myAnnualLeaveBalance && (
+                      <p className="mt-2 text-xs text-slate-500 md:text-sm">
+                        Kalan yıllık izin hakkınız:{" "}
+                        <span className="font-semibold text-sky-700">
+                          {myAnnualLeaveBalance.remaining_days} gün
+                        </span>
+                        {myAnnualLeaveBalance.pending_days > 0 &&
+                          ` (${myAnnualLeaveBalance.available_days} gün kullanılabilir, ${myAnnualLeaveBalance.pending_days} gün onay bekliyor)`}
+                      </p>
+                    )}
+                  </div>
+
+                  <div className="lg:col-span-2">
                     <label className="mb-1.5 block text-xs font-semibold text-slate-500">
                       Açıklama
                     </label>
@@ -235,6 +335,41 @@ export default function LeavesPage() {
                 </button>
               </form>
             </section>
+
+            {annualLeaveBalances.length > 0 && (
+              <section className="rounded-2xl border border-[#E6EEF9] bg-white p-4 shadow-sm md:rounded-3xl md:p-5">
+                <div className="mb-4 flex items-center justify-between gap-3">
+                  <SectionTitle
+                    icon="📆"
+                    title="Kalan Yıllık İzin Hakkı"
+                    description="Yıllık izin hakkı, kullanılan ve bekleyen günler."
+                  />
+                </div>
+
+                <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
+                  {annualLeaveBalances.map((balance) => (
+                    <div
+                      key={balance.user_id}
+                      className="rounded-2xl border border-[#E6EEF9] bg-[#F8FBFF] p-4"
+                    >
+                      <p className="truncate text-sm font-semibold text-slate-800 md:text-base">
+                        {balance.full_name}
+                      </p>
+
+                      <div className="mt-3 grid grid-cols-2 gap-2 text-xs text-slate-500 md:text-sm">
+                        <span>Toplam: {balance.total_days} gün</span>
+                        <span>Kalan: {balance.remaining_days} gün</span>
+                        <span>Kullanılan: {balance.used_days} gün</span>
+                        <span>Bekleyen: {balance.pending_days} gün</span>
+                        <span className="font-semibold text-sky-700">
+                          Kullanılabilir: {balance.available_days} gün
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </section>
+            )}
 
             {teamLeaves.length > 0 && (
               <section className="rounded-2xl border border-[#E6EEF9] bg-white p-4 shadow-sm md:rounded-3xl md:p-5">
@@ -360,6 +495,10 @@ function LeaveCard({
 
           <p className="mt-1 text-xs leading-5 text-slate-500 md:text-sm">
             {formatDate(leave.start_time)} → {formatDate(leave.end_time)}
+          </p>
+          <p className="mt-1 text-xs font-semibold text-sky-600 md:text-sm">
+            {leave.leave_type === "annual" ? "Yıllık izin" : "Standart izin"}
+            {leave.day_count ? ` - ${leave.day_count} gün` : ""}
           </p>
         </div>
 
