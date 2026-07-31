@@ -365,10 +365,6 @@ export default function LeavesPage() {
                         {balance.full_name}
                       </p>
 
-                      <p className="mt-1 text-xs font-semibold text-sky-600 md:text-sm">
-                        {balance.year} yılı
-                      </p>
-
                       <div className="mt-3 grid grid-cols-2 gap-2 text-xs text-slate-500 md:text-sm">
                         <span>Toplam: {balance.total_days} gün</span>
                         <span>Kalan: {balance.remaining_days} gün</span>
