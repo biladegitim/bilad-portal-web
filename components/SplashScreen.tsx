@@ -1,13 +1,19 @@
 "use client";
 
+import Image from "next/image";
+
 export default function SplashScreen() {
   return (
     <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-gradient-to-br from-sky-50 via-white to-blue-100">
       <div className="flex flex-col items-center">
-        <img
-          src="/logo.png"
+        <Image
+          src="/splash-logo.png"
           alt="Bilad Logo"
-          className="h-28 w-auto animate-pulse object-contain"
+          width={600}
+          height={588}
+          priority
+          sizes="(max-width: 768px) 78vw, 600px"
+          className="h-auto w-[min(78vw,600px)] animate-pulse object-contain"
         />
 
         <div className="mt-8 h-10 w-10 animate-spin rounded-full border-4 border-sky-100 border-t-sky-600" />
