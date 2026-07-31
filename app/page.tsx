@@ -64,6 +64,7 @@ type Reservation = {
 
 const FLOOR_STORAGE_KEY = "bilad-room-floors";
 const ROOM_FLOOR_STORAGE_KEY = "bilad-room-floor-map";
+const SPLASH_DURATION_MS = 1800;
 const unassignedFloor = "Kat seçilmemiş";
 type UsageStatus = "active" | "future" | "past" | "idle";
 
@@ -231,12 +232,19 @@ export default function Home() {
   const selectedRoomUsageStatus = getRoomUsageStatus(selectedRoomReservations);
 
   useEffect(() => {
-    const timer = setTimeout(() => setSplashLoading(false), 900);
+    const timer = setTimeout(() => setSplashLoading(false), SPLASH_DURATION_MS);
     const token = getAccessToken();
 
     if (!token) {
-      router.push("/login");
-      return () => clearTimeout(timer);
+      const redirectTimer = setTimeout(
+        () => router.push("/login"),
+        SPLASH_DURATION_MS
+      );
+
+      return () => {
+        clearTimeout(timer);
+        clearTimeout(redirectTimer);
+      };
     }
 
     apiFetch("/profile", {
