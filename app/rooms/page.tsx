@@ -492,7 +492,7 @@ export default function RoomsPage() {
                     <div className="mb-4 flex items-center justify-between gap-3">
                       <SectionTitle
                         icon="🏢"
-                        title={editingRoomId ? "Mekan Düzenle" : "Mekan Yönetimi"}
+                        title={editingRoomId ? "Mekan Düzenle" : "Mekan Oluşturma"}
                         description="Kat planında kullanılacak mekanları oluşturun."
                       />
 
@@ -588,7 +588,7 @@ export default function RoomsPage() {
                     <div className="mb-4 flex items-center justify-between gap-3">
                       <SectionTitle
                         icon="🏢"
-                        title="Mekanlar"
+                        title="Mekan Yönetimi"
                         description="Kayıtlı mekanları görüntüleyin, düzenleyin veya silin."
                       />
 
@@ -944,7 +944,7 @@ export default function RoomsPage() {
 
                       {floorOptions.length === 0 ? (
                         <div className="rounded-2xl bg-white p-4 text-sm text-slate-400">
-                          Haftalık görünüm için önce Mekan Yönetimi bölümünden kat ekleyin.
+                          Haftalık görünüm için önce Mekan Oluşturma bölümünden kat ekleyin.
                         </div>
                       ) : (
                         <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4">
@@ -1126,7 +1126,7 @@ export default function RoomsPage() {
                     {isSuperAdmin && (
                       <HeaderActionButton
                         active={openPanel === "rooms"}
-                        label="Mekan Yönetimi"
+                        label="Mekan Oluşturma"
                         count={floorOptions.filter((floor) => floor !== unassignedFloor).length}
                         countLabel="kat"
                         onClick={() =>
@@ -1138,7 +1138,7 @@ export default function RoomsPage() {
                     {isSuperAdmin && (
                       <HeaderActionButton
                         active={openPanel === "roomList"}
-                        label="Mekanlar"
+                        label="Mekan Yönetimi"
                         count={rooms.length}
                         countLabel="mekan"
                         onClick={() =>
