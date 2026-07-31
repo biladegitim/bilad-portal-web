@@ -1100,34 +1100,35 @@ export default function RoomsPage() {
                     {isSuperAdmin && (
                       <HeaderActionButton
                         active={openPanel === "rooms"}
+                        label="Mekan Yönetimi"
+                        count={rooms.length}
+                        countLabel="mekan"
                         onClick={() =>
                           setOpenPanel(openPanel === "rooms" ? null : "rooms")
                         }
-                      >
-                        {openPanel === "rooms" ? "Mekanları Kapat" : "+ Mekan Yönetimi"}
-                      </HeaderActionButton>
+                      />
                     )}
 
                     <HeaderActionButton
                       active={openPanel === "request"}
+                      label="Program Talebi"
+                      count={Object.values(weeklySchedule).flat().length}
+                      countLabel="program"
                       onClick={() =>
                         setOpenPanel(openPanel === "request" ? null : "request")
                       }
-                    >
-                      {openPanel === "request" ? "Talebi Kapat" : "+ Program Talebi"}
-                    </HeaderActionButton>
+                    />
 
                     {canReviewRoomRequests && (
                       <HeaderActionButton
                         active={openPanel === "pending"}
+                        label="Bekleyen Talepler"
+                        count={pendingReservations.length}
+                        countLabel="talep"
                         onClick={() =>
                           setOpenPanel(openPanel === "pending" ? null : "pending")
                         }
-                      >
-                        {openPanel === "pending"
-                          ? "Talepleri Kapat"
-                          : `Bekleyen Talepler (${pendingReservations.length})`}
-                      </HeaderActionButton>
+                      />
                     )}
                   </div>
                   </>
@@ -1172,24 +1173,31 @@ function InfoBox({ children }: { children: React.ReactNode }) {
 
 function HeaderActionButton({
   active,
+  label,
+  count,
+  countLabel,
   onClick,
-  children,
 }: {
   active: boolean;
+  label: string;
+  count: number;
+  countLabel: string;
   onClick: () => void;
-  children: React.ReactNode;
 }) {
   return (
     <button
       type="button"
       onClick={onClick}
-      className={`h-11 rounded-2xl px-4 text-sm font-semibold shadow-sm transition ${
+      className={`rounded-2xl border p-4 text-left shadow-sm transition ${
         active
-          ? "border border-[#E6EEF9] bg-white text-slate-600 hover:bg-slate-50"
-          : "bg-sky-600 text-white hover:bg-sky-700"
+          ? "border-sky-200 bg-sky-50 text-sky-700"
+          : "border-[#E6EEF9] bg-white text-slate-700 hover:bg-[#F8FBFF]"
       }`}
     >
-      {children}
+      <span className="block text-sm font-bold md:text-base">{label}</span>
+      <span className="mt-1 block text-xs font-semibold text-slate-400">
+        {count} {countLabel}
+      </span>
     </button>
   );
 }
