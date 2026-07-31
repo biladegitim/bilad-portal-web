@@ -8,6 +8,7 @@ import Sidebar from "@/components/Sidebar";
 import SplashScreen from "@/components/SplashScreen";
 import { apiFetch, apiUrl } from "@/lib/api";
 import { authHeaders, getAccessToken } from "@/lib/auth";
+import { formatLocalDate, formatLocalDateShort, formatLocalTime } from "@/lib/dateTime";
 import { sortFloors } from "@/lib/floors";
 
 type HomeData = {
@@ -322,25 +323,11 @@ export default function Home() {
   }
 
   function formatLeaveTime(value: string) {
-    const timePart = value.split("T")[1] || value.split(" ")[1];
-    const [hour, minute] = (timePart || "").split(":");
-
-    if (hour && minute) {
-      return `${hour.padStart(2, "0")}:${minute.padStart(2, "0")}`;
-    }
-
-    return new Date(value).toLocaleTimeString("tr-TR", {
-      hour: "2-digit",
-      minute: "2-digit",
-    });
+    return formatLocalTime(value);
   }
 
   function formatDate(date: string) {
-    return new Date(date).toLocaleDateString("tr-TR", {
-      day: "numeric",
-      month: "long",
-      year: "numeric",
-    });
+    return formatLocalDate(date);
   }
 
   function selectFloor(floor: string) {
@@ -503,13 +490,7 @@ export default function Home() {
                         </span>
 
                         <span className="text-sm font-bold text-sky-600">
-                          {new Date(event.start_time).toLocaleDateString(
-                            "tr-TR",
-                            {
-                              day: "numeric",
-                              month: "short",
-                            }
-                          )}
+                          {formatLocalDateShort(event.start_time)}
                         </span>
                       </div>
                     </div>

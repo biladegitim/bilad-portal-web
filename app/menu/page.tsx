@@ -8,6 +8,7 @@ import Sidebar from "@/components/Sidebar";
 import { apiFetch } from "@/lib/api";
 import { canManageMenu, fetchProfileAccess } from "@/lib/access";
 import { authHeaders, getAccessToken, jsonAuthHeaders } from "@/lib/auth";
+import { formatLocalWeekdayDate } from "@/lib/dateTime";
 
 type MenuItem = {
   id: number;
@@ -236,12 +237,7 @@ export default function MenuPage() {
                   >
                     <div className="border-b border-[#E6EEF9] bg-[#F8FBFF] p-4">
                       <p className="text-xs font-semibold capitalize text-slate-400 md:text-sm">
-                        {new Date(menu.menu_date).toLocaleDateString("tr-TR", {
-                          weekday: "long",
-                          day: "numeric",
-                          month: "long",
-                          year: "numeric",
-                        })}
+                        {formatLocalWeekdayDate(menu.menu_date)}
                       </p>
 
                       <h2 className="mt-2 flex items-center gap-2 text-lg font-bold text-slate-800 md:text-xl">

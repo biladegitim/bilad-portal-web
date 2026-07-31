@@ -18,6 +18,7 @@ type EventItem = {
 
 import { apiFetch } from "@/lib/api";
 import { authHeaders, getAccessToken, jsonAuthHeaders } from "@/lib/auth";
+import { formatLocalDateTime } from "@/lib/dateTime";
 
 export default function EventsPage() {
   const router = useRouter();
@@ -125,13 +126,7 @@ export default function EventsPage() {
   }
 
   function formatDate(date: string) {
-    return new Date(date).toLocaleString("tr-TR", {
-      day: "numeric",
-      month: "long",
-      year: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
+    return formatLocalDateTime(date);
   }
 
   return (

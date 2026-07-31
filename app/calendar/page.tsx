@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import Sidebar from "@/components/Sidebar";
 import { apiFetch } from "@/lib/api";
 import { getAccessToken } from "@/lib/auth";
+import { formatLocalDate, formatLocalDateTime } from "@/lib/dateTime";
 
 type MonthEvent = {
   date: string;
@@ -296,7 +297,7 @@ export default function CalendarPage() {
               <div>
                 <h2 className="text-base font-bold text-slate-800 md:text-lg">
                   {selectedDate
-                    ? new Date(selectedDate).toLocaleDateString("tr-TR")
+                    ? formatLocalDate(selectedDate)
                     : "Etkinlik bilgisi"}
                 </h2>
 
@@ -335,7 +336,7 @@ export default function CalendarPage() {
                         </h3>
 
                         <p className="mt-1 text-xs text-sky-600">
-                          {new Date(event.start_time).toLocaleString("tr-TR")}
+                          {formatLocalDateTime(event.start_time)}
                         </p>
 
                         <p className="mt-2 text-sm leading-6 text-slate-500">

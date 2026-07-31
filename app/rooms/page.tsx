@@ -8,6 +8,7 @@ import Sidebar from "@/components/Sidebar";
 import { apiFetch } from "@/lib/api";
 import { canApproveRooms, canManageRooms, fetchProfileAccess } from "@/lib/access";
 import { authHeaders, getAccessToken, jsonAuthHeaders } from "@/lib/auth";
+import { formatLocalDate } from "@/lib/dateTime";
 import { sortFloors } from "@/lib/floors";
 
 type Room = {
@@ -432,11 +433,7 @@ export default function RoomsPage() {
   }
 
   function formatDate(date: string) {
-    return new Date(date).toLocaleDateString("tr-TR", {
-      day: "numeric",
-      month: "long",
-      year: "numeric",
-    });
+    return formatLocalDate(date);
   }
 
   function toggleWeekday(value: string) {
