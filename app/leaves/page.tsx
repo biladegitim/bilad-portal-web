@@ -4,8 +4,6 @@ import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import Sidebar from "@/components/Sidebar";
-import { ActionPanelButton } from "@/components/ui/AppUi";
-import { useFeedback } from "@/components/ui/Feedback";
 
 import { apiFetch } from "@/lib/api";
 import { fetchProfileAccess } from "@/lib/access";
@@ -55,7 +53,6 @@ function calculateLeaveDays(startTime: string, endTime: string) {
 
 export default function LeavesPage() {
   const router = useRouter();
-  const { confirm, toast } = useFeedback();
 
   const [myLeaves, setMyLeaves] = useState<LeaveItem[]>([]);
   const [teamLeaves, setTeamLeaves] = useState<LeaveItem[]>([]);
@@ -171,18 +168,17 @@ export default function LeavesPage() {
       const end = new Date(endTime);
 
       if (start.getFullYear() !== end.getFullYear()) {
-        toast("Yıllık izin talebi tek takvim yılı içinde olmalıdır", "error");
+        alert("Yıllık izin talebi tek takvim yılı içinde olmalıdır");
         return;
       }
 
       const requestedDays = calculateLeaveDays(startTime, endTime);
 
       if (requestedDays > myBalance.available_days) {
-        toast(
+        alert(
           myBalance.available_days <= 0
             ? "Yıllık izin hakkınız kalmadı"
-            : `Yıllık izin hakkınız ${myBalance.available_days} gün kaldı`,
-          "error"
+            : `Yıllık izin hakkınız ${myBalance.available_days} gün kaldı`
         );
         return;
       }
@@ -200,7 +196,7 @@ export default function LeavesPage() {
     });
 
     if (!response.ok) {
-      toast("İzin oluşturulamadı", "error");
+      alert("İzin oluşturulamadı");
       return;
     }
 
@@ -209,7 +205,6 @@ export default function LeavesPage() {
     setReason("");
     setLeaveType("standard");
     fetchLeaves();
-    toast("İzin talebi oluşturuldu", "success");
   }
 
   async function updateLeaveStatus(
@@ -225,16 +220,15 @@ export default function LeavesPage() {
     );
 
     if (!response.ok) {
-      toast("İşlem yapılamadı", "error");
+      alert("İşlem yapılamadı");
       return;
     }
 
     fetchLeaves();
-    toast(action === "approve" ? "İzin onaylandı" : "İzin reddedildi", "success");
   }
 
   async function deleteLeave(leaveId: number) {
-    if (!(await confirm("Bu izin talebi silinsin mi?"))) return;
+    if (!confirm("Bu izin talebi silinsin mi?")) return;
 
     const response = await apiFetch(`/leave-requests/${leaveId}`, {
       method: "DELETE",
@@ -242,12 +236,11 @@ export default function LeavesPage() {
     });
 
     if (!response.ok) {
-      toast("İzin talebi silinemedi", "error");
+      alert("İzin talebi silinemedi");
       return;
     }
 
     fetchLeaves();
-    toast("İzin talebi silindi", "success");
   }
 
   function statusLabel(status: string) {
@@ -581,14 +574,21 @@ function PanelButton({
   onClick: () => void;
 }) {
   return (
-    <div className={disabled ? "pointer-events-none opacity-50" : ""}>
-      <ActionPanelButton
-        title={label}
-        description={`${count} kayıt`}
-        active={active}
-        onClick={onClick}
-      />
-    </div>
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled}
+      className={`rounded-2xl border p-4 text-left shadow-sm transition ${
+        active
+          ? "border-sky-200 bg-sky-50 text-sky-700"
+          : "border-[#E6EEF9] bg-white text-slate-700 hover:bg-[#F8FBFF]"
+      } ${disabled ? "cursor-not-allowed opacity-50" : ""}`}
+    >
+      <span className="block text-sm font-bold md:text-base">{label}</span>
+      <span className="mt-1 block text-xs font-semibold text-slate-400">
+        {count} kayıt
+      </span>
+    </button>
   );
 }
 

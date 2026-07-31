@@ -4,7 +4,6 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import Sidebar from "@/components/Sidebar";
-import { useFeedback } from "@/components/ui/Feedback";
 
 import { apiFetch } from "@/lib/api";
 import { authHeaders, getAccessToken } from "@/lib/auth";
@@ -32,7 +31,6 @@ type DashboardData = {
 
 export default function AttendancePage() {
   const router = useRouter();
-  const { toast } = useFeedback();
 
   const [dashboard, setDashboard] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -64,7 +62,7 @@ export default function AttendancePage() {
       });
 
       if (!response.ok) {
-        toast("Excel indirilemedi", "error");
+        alert("Excel indirilemedi");
         return;
       }
 
@@ -82,9 +80,8 @@ export default function AttendancePage() {
       a.remove();
 
       window.URL.revokeObjectURL(url);
-      toast("Excel raporu indirildi", "success");
     } catch {
-      toast("Excel indirilemedi", "error");
+      alert("Excel indirilemedi");
     }
   }
 

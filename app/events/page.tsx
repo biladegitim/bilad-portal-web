@@ -4,7 +4,6 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import Sidebar from "@/components/Sidebar";
-import { useFeedback } from "@/components/ui/Feedback";
 
 type EventItem = {
   id: number;
@@ -23,7 +22,6 @@ import { formatLocalDateTime } from "@/lib/dateTime";
 
 export default function EventsPage() {
   const router = useRouter();
-  const { confirm, toast } = useFeedback();
 
   const [events, setEvents] = useState<EventItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -103,17 +101,16 @@ export default function EventsPage() {
     );
 
     if (!response.ok) {
-      toast("İşlem başarısız", "error");
+      alert("İşlem başarısız");
       return;
     }
 
     resetForm();
     fetchEvents();
-    toast(editingId ? "Etkinlik güncellendi" : "Etkinlik oluşturuldu", "success");
   }
 
   async function handleDelete(id: number) {
-    if (!(await confirm("Etkinlik silinsin mi?"))) return;
+    if (!confirm("Etkinlik silinsin mi?")) return;
 
     const response = await apiFetch(`/events/${id}`, {
       method: "DELETE",
@@ -121,12 +118,11 @@ export default function EventsPage() {
     });
 
     if (!response.ok) {
-      toast("Etkinlik silinemedi", "error");
+      alert("Etkinlik silinemedi");
       return;
     }
 
     fetchEvents();
-    toast("Etkinlik silindi", "success");
   }
 
   function formatDate(date: string) {

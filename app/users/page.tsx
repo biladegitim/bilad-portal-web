@@ -4,7 +4,6 @@ import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import Sidebar from "@/components/Sidebar";
-import { useFeedback } from "@/components/ui/Feedback";
 import { apiFetch } from "@/lib/api";
 import { authHeaders, getAccessToken, jsonAuthHeaders } from "@/lib/auth";
 
@@ -30,7 +29,6 @@ const permissionOptions = [
 
 export default function UsersPage() {
   const router = useRouter();
-  const { confirm, toast } = useFeedback();
 
   const [users, setUsers] = useState<UserItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -95,7 +93,7 @@ export default function UsersPage() {
     });
 
     if (!response.ok) {
-      toast("Kullanıcı oluşturulamadı", "error");
+      alert("Kullanıcı oluşturulamadı");
       return;
     }
 
@@ -104,7 +102,6 @@ export default function UsersPage() {
     setPassword("");
     setShowCreateForm(false);
     fetchUsers();
-    toast("Kullanıcı oluşturuldu", "success");
   }
 
   async function startEdit(user: UserItem) {
@@ -197,7 +194,7 @@ export default function UsersPage() {
       );
 
       if (!roleResponse.ok || !orgResponse.ok || !workResponseOk || !annualLeaveResponse.ok) {
-        toast("Kullanıcı güncellenemedi. Backend endpointlerini kontrol edin.", "error");
+        alert("Kullanıcı güncellenemedi. Backend endpointlerini kontrol edin.");
         return;
       }
 
@@ -226,20 +223,20 @@ export default function UsersPage() {
       );
 
       if (permissionResponses.some((response) => !response.ok)) {
-        toast("Yetkiler kaydedilemedi.", "error");
+        alert("Yetkiler kaydedilemedi.");
         return;
       }
 
-      toast("Kullanıcı güncellendi.", "success");
+      alert("Kullanıcı güncellendi.");
       resetEdit();
       fetchUsers();
     } catch (err) {
       console.error("UPDATE ERROR:", err);
-      toast("Sunucuya bağlanılamadı.", "error");
+      alert("Sunucuya bağlanılamadı.");
     }
   }
   async function handleDeleteUser(user: UserItem) {
-    if (!(await confirm(`${user.full_name} silinsin mi?`))) return;
+    if (!confirm(`${user.full_name} silinsin mi?`)) return;
 
     const response = await apiFetch(`/users/${user.id}`, {
       method: "DELETE",
@@ -247,12 +244,11 @@ export default function UsersPage() {
     });
 
     if (!response.ok) {
-      toast("Kullanıcı silinemedi", "error");
+      alert("Kullanıcı silinemedi");
       return;
     }
 
     fetchUsers();
-    toast("Kullanıcı silindi", "success");
   }
 
   function roleLabel(role: string) {
