@@ -1,11 +1,10 @@
-const CACHE_NAME = "bilad-portal-pwa-v3";
+const CACHE_NAME = "bilad-portal-pwa-v4";
 const CORE_ASSETS = [
   "/offline.html",
   "/manifest.json",
   "/logo.png",
   "/icon-192.png",
   "/icon-512.png",
-  "/icon-1024.png",
   "/default-avatar.png",
 ];
 
