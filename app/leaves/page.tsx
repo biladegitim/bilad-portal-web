@@ -33,6 +33,8 @@ type AnnualLeaveBalance = {
   available_days: number;
 };
 
+type LeavePanel = "annual" | "team" | "mine";
+
 function calculateLeaveDays(startTime: string, endTime: string) {
   if (!startTime || !endTime) return 0;
 
@@ -61,6 +63,7 @@ export default function LeavesPage() {
   const [endTime, setEndTime] = useState("");
   const [reason, setReason] = useState("");
   const [leaveType, setLeaveType] = useState("standard");
+  const [activePanel, setActivePanel] = useState<LeavePanel | null>(null);
 
   const fetchLeaves = useCallback(async () => {
     try {
@@ -345,7 +348,39 @@ export default function LeavesPage() {
               </form>
             </section>
 
-            {annualLeaveBalances.length > 0 && (
+            <section className="grid grid-cols-1 gap-3 md:grid-cols-3">
+              <PanelButton
+                label="Kalan Yıllık İzin Hakkı"
+                count={annualLeaveBalances.length}
+                active={activePanel === "annual"}
+                onClick={() =>
+                  setActivePanel((current) =>
+                    current === "annual" ? null : "annual"
+                  )
+                }
+              />
+
+              <PanelButton
+                label="İzin Yönetimi"
+                count={teamLeaves.length}
+                active={activePanel === "team"}
+                disabled={teamLeaves.length === 0}
+                onClick={() =>
+                  setActivePanel((current) => (current === "team" ? null : "team"))
+                }
+              />
+
+              <PanelButton
+                label="Benim İzinlerim"
+                count={myLeaves.length}
+                active={activePanel === "mine"}
+                onClick={() =>
+                  setActivePanel((current) => (current === "mine" ? null : "mine"))
+                }
+              />
+            </section>
+
+            {activePanel === "annual" && annualLeaveBalances.length > 0 && (
               <section className="rounded-2xl border border-[#E6EEF9] bg-white p-4 shadow-sm md:rounded-3xl md:p-5">
                 <div className="mb-4 flex items-center justify-between gap-3">
                   <SectionTitle
@@ -380,7 +415,7 @@ export default function LeavesPage() {
               </section>
             )}
 
-            {teamLeaves.length > 0 && (
+            {activePanel === "team" && teamLeaves.length > 0 && (
               <section className="rounded-2xl border border-[#E6EEF9] bg-white p-4 shadow-sm md:rounded-3xl md:p-5">
                 <div className="mb-4 flex items-center justify-between gap-3">
                   <SectionTitle
@@ -412,6 +447,7 @@ export default function LeavesPage() {
               </section>
             )}
 
+            {activePanel === "mine" && (
             <section className="rounded-2xl border border-[#E6EEF9] bg-white p-4 shadow-sm md:rounded-3xl md:p-5">
               <div className="mb-4 flex items-center justify-between gap-3">
                 <SectionTitle
@@ -444,6 +480,7 @@ export default function LeavesPage() {
                 </div>
               )}
             </section>
+            )}
           </div>
         </div>
       </main>
@@ -472,6 +509,38 @@ function SectionTitle({
         <p className="text-sm text-slate-400">{description}</p>
       </div>
     </div>
+  );
+}
+
+function PanelButton({
+  label,
+  count,
+  active,
+  disabled = false,
+  onClick,
+}: {
+  label: string;
+  count: number;
+  active: boolean;
+  disabled?: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled}
+      className={`rounded-2xl border p-4 text-left shadow-sm transition ${
+        active
+          ? "border-sky-200 bg-sky-50 text-sky-700"
+          : "border-[#E6EEF9] bg-white text-slate-700 hover:bg-[#F8FBFF]"
+      } ${disabled ? "cursor-not-allowed opacity-50" : ""}`}
+    >
+      <span className="block text-sm font-bold md:text-base">{label}</span>
+      <span className="mt-1 block text-xs font-semibold text-slate-400">
+        {count} kayıt
+      </span>
+    </button>
   );
 }
 
