@@ -276,13 +276,15 @@ export default function LeavesPage() {
           </header>
 
           <div className="space-y-4 md:space-y-5">
-            <section className="rounded-2xl border border-[#E6EEF9] bg-white p-4 shadow-sm md:rounded-3xl md:p-5">
-              <form onSubmit={handleCreateLeave} className="space-y-4">
-                <SectionTitle
-                  icon="📝"
-                  title="Yeni İzin Talebi"
-                  description="Başlangıç, bitiş ve izin açıklamasını girin."
-                />
+            {activePanel === null && (
+              <>
+                <section className="rounded-2xl border border-[#E6EEF9] bg-white p-4 shadow-sm md:rounded-3xl md:p-5">
+                  <form onSubmit={handleCreateLeave} className="space-y-4">
+                    <SectionTitle
+                      icon="📝"
+                      title="Yeni İzin Talebi"
+                      description="Başlangıç, bitiş ve izin açıklamasını girin."
+                    />
 
                 <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
                   <DateInput
@@ -348,40 +350,57 @@ export default function LeavesPage() {
               </form>
             </section>
 
-            <section className="grid grid-cols-1 gap-3 md:grid-cols-3">
-              <PanelButton
-                label="Kalan Yıllık İzin Hakkı"
-                count={annualLeaveBalances.length}
-                active={activePanel === "annual"}
-                onClick={() =>
-                  setActivePanel((current) =>
-                    current === "annual" ? null : "annual"
-                  )
-                }
-              />
+                <section className="grid grid-cols-1 gap-3 md:grid-cols-3">
+                  <PanelButton
+                    label="Kalan Yıllık İzin Hakkı"
+                    count={annualLeaveBalances.length}
+                    active={activePanel === "annual"}
+                    disabled={annualLeaveBalances.length === 0}
+                    onClick={() =>
+                      setActivePanel((current) =>
+                        current === "annual" ? null : "annual"
+                      )
+                    }
+                  />
 
-              <PanelButton
-                label="İzin Yönetimi"
-                count={teamLeaves.length}
-                active={activePanel === "team"}
-                disabled={teamLeaves.length === 0}
-                onClick={() =>
-                  setActivePanel((current) => (current === "team" ? null : "team"))
-                }
-              />
+                  <PanelButton
+                    label="İzin Yönetimi"
+                    count={teamLeaves.length}
+                    active={activePanel === "team"}
+                    disabled={teamLeaves.length === 0}
+                    onClick={() =>
+                      setActivePanel((current) =>
+                        current === "team" ? null : "team"
+                      )
+                    }
+                  />
 
-              <PanelButton
-                label="Benim İzinlerim"
-                count={myLeaves.length}
-                active={activePanel === "mine"}
-                onClick={() =>
-                  setActivePanel((current) => (current === "mine" ? null : "mine"))
-                }
-              />
-            </section>
+                  <PanelButton
+                    label="Benim İzinlerim"
+                    count={myLeaves.length}
+                    active={activePanel === "mine"}
+                    onClick={() =>
+                      setActivePanel((current) =>
+                        current === "mine" ? null : "mine"
+                      )
+                    }
+                  />
+                </section>
+              </>
+            )}
 
             {activePanel === "annual" && annualLeaveBalances.length > 0 && (
               <section className="rounded-2xl border border-[#E6EEF9] bg-white p-4 shadow-sm md:rounded-3xl md:p-5">
+                <div className="mb-4 flex justify-end">
+                  <button
+                    type="button"
+                    onClick={() => setActivePanel(null)}
+                    className="h-10 rounded-2xl border border-[#E6EEF9] bg-white px-4 text-sm font-semibold text-slate-600 transition hover:bg-slate-50"
+                  >
+                    Kapat
+                  </button>
+                </div>
+
                 <div className="mb-4 flex items-center justify-between gap-3">
                   <SectionTitle
                     icon="📆"
@@ -417,6 +436,16 @@ export default function LeavesPage() {
 
             {activePanel === "team" && teamLeaves.length > 0 && (
               <section className="rounded-2xl border border-[#E6EEF9] bg-white p-4 shadow-sm md:rounded-3xl md:p-5">
+                <div className="mb-4 flex justify-end">
+                  <button
+                    type="button"
+                    onClick={() => setActivePanel(null)}
+                    className="h-10 rounded-2xl border border-[#E6EEF9] bg-white px-4 text-sm font-semibold text-slate-600 transition hover:bg-slate-50"
+                  >
+                    Kapat
+                  </button>
+                </div>
+
                 <div className="mb-4 flex items-center justify-between gap-3">
                   <SectionTitle
                     icon="👥"
@@ -448,13 +477,23 @@ export default function LeavesPage() {
             )}
 
             {activePanel === "mine" && (
-            <section className="rounded-2xl border border-[#E6EEF9] bg-white p-4 shadow-sm md:rounded-3xl md:p-5">
-              <div className="mb-4 flex items-center justify-between gap-3">
-                <SectionTitle
-                  icon="📋"
-                  title="Benim İzinlerim"
-                  description="Oluşturduğunuz izin talepleri."
-                />
+              <section className="rounded-2xl border border-[#E6EEF9] bg-white p-4 shadow-sm md:rounded-3xl md:p-5">
+                <div className="mb-4 flex justify-end">
+                  <button
+                    type="button"
+                    onClick={() => setActivePanel(null)}
+                    className="h-10 rounded-2xl border border-[#E6EEF9] bg-white px-4 text-sm font-semibold text-slate-600 transition hover:bg-slate-50"
+                  >
+                    Kapat
+                  </button>
+                </div>
+
+                <div className="mb-4 flex items-center justify-between gap-3">
+                  <SectionTitle
+                    icon="📋"
+                    title="Benim İzinlerim"
+                    description="Oluşturduğunuz izin talepleri."
+                  />
 
                 <span className="rounded-full bg-[#F8FBFF] px-3 py-1.5 text-xs font-semibold text-slate-500 md:text-sm">
                   {loading ? "..." : `${myLeaves.length} kayıt`}
@@ -479,7 +518,7 @@ export default function LeavesPage() {
                   ))}
                 </div>
               )}
-            </section>
+              </section>
             )}
           </div>
         </div>
