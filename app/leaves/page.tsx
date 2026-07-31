@@ -352,7 +352,7 @@ export default function LeavesPage() {
 
                 <section className="grid grid-cols-1 gap-3 md:grid-cols-3">
                   <PanelButton
-                    label="Kalan Yıllık İzin Hakkı"
+                    label="Yıllık İzin Yönetimi"
                     count={annualLeaveBalances.length}
                     active={activePanel === "annual"}
                     disabled={annualLeaveBalances.length === 0}
