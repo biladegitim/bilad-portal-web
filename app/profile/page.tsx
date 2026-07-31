@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import Sidebar from "@/components/Sidebar";
+import { useFeedback } from "@/components/ui/Feedback";
 
 import { apiFetch, apiUrl } from "@/lib/api";
 import { authHeaders, getAccessToken, jsonAuthHeaders } from "@/lib/auth";
@@ -17,6 +18,7 @@ type ProfileData = {
 
 export default function ProfilePage() {
   const router = useRouter();
+  const { confirm, toast } = useFeedback();
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const [profile, setProfile] = useState<ProfileData | null>(null);
@@ -79,7 +81,7 @@ export default function ProfilePage() {
     });
 
     if (!response.ok) {
-      alert("Fotoğraf yüklenemedi");
+      toast("Fotoğraf yüklenemedi", "error");
       return;
     }
 
@@ -93,10 +95,11 @@ export default function ProfilePage() {
           }
         : prev
     );
+    toast("Fotoğraf güncellendi", "success");
   }
 
   async function handleRemovePhoto() {
-    if (!confirm("Profil fotoğrafı kaldırılsın mı?")) return;
+    if (!(await confirm("Profil fotoğrafı kaldırılsın mı?"))) return;
 
     const response = await apiFetch("/profile/remove-photo", {
       method: "DELETE",
@@ -104,7 +107,7 @@ export default function ProfilePage() {
     });
 
     if (!response.ok) {
-      alert("Fotoğraf kaldırılamadı");
+      toast("Fotoğraf kaldırılamadı", "error");
       return;
     }
 
@@ -116,6 +119,7 @@ export default function ProfilePage() {
           }
         : prev
     );
+    toast("Fotoğraf kaldırıldı", "success");
   }
 
   async function handlePasswordChange(e: React.FormEvent) {

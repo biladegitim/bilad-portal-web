@@ -715,10 +715,12 @@ function DashboardCard({
 }) {
   return (
     <div
-      className={`rounded-2xl border border-[#E6EEF9] bg-white p-4 shadow-sm md:rounded-3xl md:p-5 ${className}`}
+      className={`rounded-3xl border border-[#E6EEF9] bg-white/95 p-4 shadow-sm shadow-slate-200/60 ring-1 ring-white/70 transition hover:-translate-y-0.5 hover:shadow-md md:p-5 ${className}`}
     >
       <div className="mb-4 flex items-center gap-3 md:mb-5">
-        <span className="text-lg leading-none md:text-xl">{icon}</span>
+        <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-sky-50 text-lg leading-none text-sky-700 md:text-xl">
+          {icon}
+        </span>
 
         <h2 className="text-lg font-bold text-slate-800 md:text-xl">
           {title}

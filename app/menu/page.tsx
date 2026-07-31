@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import Sidebar from "@/components/Sidebar";
+import { useFeedback } from "@/components/ui/Feedback";
 
 import { apiFetch } from "@/lib/api";
 import { canManageMenu, fetchProfileAccess } from "@/lib/access";
@@ -18,6 +19,7 @@ type MenuItem = {
 
 export default function MenuPage() {
   const router = useRouter();
+  const { confirm, toast } = useFeedback();
 
   const [menus, setMenus] = useState<MenuItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -83,16 +85,17 @@ export default function MenuPage() {
     );
 
     if (!response.ok) {
-      alert("Menü kaydedilemedi");
+      toast("Menü kaydedilemedi", "error");
       return;
     }
 
     resetForm();
     fetchMenus();
+    toast(editingId ? "Menü güncellendi" : "Menü eklendi", "success");
   }
 
   async function handleDelete(id: number) {
-    if (!confirm("Bu menü silinsin mi?")) return;
+    if (!(await confirm("Bu menü silinsin mi?"))) return;
 
     const response = await apiFetch(`/menus/${id}`, {
       method: "DELETE",
@@ -100,11 +103,12 @@ export default function MenuPage() {
     });
 
     if (!response.ok) {
-      alert("Menü silinemedi");
+      toast("Menü silinemedi", "error");
       return;
     }
 
     fetchMenus();
+    toast("Menü silindi", "success");
   }
 
   if (loading) {

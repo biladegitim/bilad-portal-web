@@ -8,24 +8,24 @@ import { useLeaveNotifications } from "@/hooks/useLeaveNotifications";
 import { useProfileAccess } from "@/hooks/useProfileAccess";
 
 const menuItems = [
-  { title: "Ana Sayfa", href: "/", icon: "🏠" },
-  { title: "Etkinlikler", href: "/events", icon: "📌" },
-  { title: "Takvim", href: "/calendar", icon: "🗓️" },
-  { title: "İzinler", href: "/leaves", icon: "📝" },
-  { title: "QR Okut", href: "/qr-scan", icon: "📱" },
-  { title: "QR Ekranı", href: "/qr", icon: "▣" },
-  { title: "Kat Planı", href: "/rooms", icon: "🏢" },
-  { title: "Menü", href: "/menu", icon: "🍽" },
-  { title: "Giriş-Çıkış", href: "/attendance", icon: "📊" },
-  { title: "Kullanıcılar", href: "/users", icon: "👥" },
+  { title: "Ana Sayfa", href: "/", icon: "AN" },
+  { title: "Etkinlikler", href: "/events", icon: "ET" },
+  { title: "Takvim", href: "/calendar", icon: "TK" },
+  { title: "İzinler", href: "/leaves", icon: "İZ" },
+  { title: "QR Okut", href: "/qr-scan", icon: "QR" },
+  { title: "QR Ekranı", href: "/qr", icon: "EK" },
+  { title: "Kat Planı", href: "/rooms", icon: "KP" },
+  { title: "Menü", href: "/menu", icon: "MN" },
+  { title: "Giriş-Çıkış", href: "/attendance", icon: "GÇ" },
+  { title: "Kullanıcılar", href: "/users", icon: "KL" },
 ];
 
 export default function Sidebar() {
   const pathname = usePathname();
   const { access } = useProfileAccess();
   const { count: leaveNotificationCount } = useLeaveNotifications();
-
   const [mobileOpen, setMobileOpen] = useState(false);
+
   const role = access?.role;
   const isSuperAdmin = role === "super_admin";
   const isAdmin = role === "admin" || role === "super_admin";
@@ -61,7 +61,11 @@ export default function Sidebar() {
             : "text-slate-600 hover:bg-[#F6F9FF]"
         }`}
       >
-        <span className="flex h-6 w-6 shrink-0 items-center justify-center text-base leading-none">
+        <span
+          className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-xl text-[10px] font-black leading-none ${
+            active ? "bg-white text-sky-700" : "bg-[#F6F9FF] text-slate-500"
+          }`}
+        >
           {item.icon}
         </span>
 
@@ -81,6 +85,7 @@ export default function Sidebar() {
   return (
     <>
       <button
+        type="button"
         onClick={() => setMobileOpen(true)}
         className="fixed left-4 top-4 z-50 flex h-11 w-11 items-center justify-center rounded-2xl border border-[#E6EEF9] bg-white text-lg text-slate-700 shadow-sm transition active:scale-95 md:hidden"
         aria-label="Menüyü aç"
@@ -104,11 +109,12 @@ export default function Sidebar() {
           <img src="/logo.png" alt="Bilad" className="h-11 object-contain" />
 
           <button
+            type="button"
             onClick={() => setMobileOpen(false)}
             className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#F6F9FF] text-sm text-slate-600 transition active:scale-95"
             aria-label="Menüyü kapat"
           >
-            ✕
+            ×
           </button>
         </div>
 
@@ -135,9 +141,7 @@ export default function Sidebar() {
           <img src="/logo.png" alt="Bilad" className="h-14 object-contain" />
         </div>
 
-        <nav className="space-y-1">
-          {visibleItems.map((item) => renderNavItem(item))}
-        </nav>
+        <nav className="space-y-1">{visibleItems.map((item) => renderNavItem(item))}</nav>
       </aside>
     </>
   );

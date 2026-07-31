@@ -4,6 +4,8 @@ import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import Sidebar from "@/components/Sidebar";
+import { ActionPanelButton } from "@/components/ui/AppUi";
+import { useFeedback } from "@/components/ui/Feedback";
 
 import { apiFetch } from "@/lib/api";
 import { canApproveRooms, canManageRooms, fetchProfileAccess } from "@/lib/access";
@@ -84,6 +86,7 @@ function normalizeWeeklySchedule(
 
 export default function RoomsPage() {
   const router = useRouter();
+  const { confirm, toast } = useFeedback();
 
   const [rooms, setRooms] = useState<Room[]>([]);
   const [weeklySchedule, setWeeklySchedule] = useState<Record<string, Reservation[]>>({});
@@ -262,7 +265,7 @@ export default function RoomsPage() {
     );
 
     if (floorExists) {
-      alert("Bu kat zaten eklenmiş.");
+      toast("Bu kat zaten eklenmiş.", "error");
       return;
     }
 
@@ -289,7 +292,7 @@ export default function RoomsPage() {
     );
 
     if (!response.ok) {
-      alert("Mekan işlemi başarısız");
+      toast("Mekan işlemi başarısız", "error");
       return;
     }
 
@@ -309,10 +312,11 @@ export default function RoomsPage() {
       setOpenPanel("roomList");
     }
     fetchData();
+    toast(wasEditingRoom ? "Mekan güncellendi" : "Mekan oluşturuldu", "success");
   }
 
   async function handleDeleteRoom(id: number) {
-    if (!confirm("Bu mekan silinsin mi?")) return;
+    if (!(await confirm("Bu mekan silinsin mi?"))) return;
 
     const response = await apiFetch(`/rooms/${id}`, {
       method: "DELETE",
@@ -320,7 +324,7 @@ export default function RoomsPage() {
     });
 
     if (!response.ok) {
-      alert("Mekan silinemedi.");
+      toast("Mekan silinemedi.", "error");
       return;
     }
 
@@ -328,6 +332,7 @@ export default function RoomsPage() {
     delete nextMap[id];
     saveRoomFloorMap(nextMap);
     fetchData();
+    toast("Mekan silindi", "success");
   }
 
   function resetReservationForm() {
@@ -359,7 +364,7 @@ export default function RoomsPage() {
     e.preventDefault();
 
     if (selectedWeekdays.length === 0) {
-      alert("En az bir gün seçmelisiniz.");
+      toast("En az bir gün seçmelisiniz.", "error");
       return;
     }
 
@@ -387,11 +392,16 @@ export default function RoomsPage() {
 
     if (!response.ok) {
       const data = await response.json();
-      alert(data.detail || "İşlem başarısız");
+      toast(data.detail || "İşlem başarısız", "error");
       return;
     }
 
-    alert(editingId ? "Program güncellendi." : "Program talebi oluşturuldu. Onaylanınca haftalık planda görünecek.");
+    toast(
+      editingId
+        ? "Program güncellendi."
+        : "Program talebi oluşturuldu. Onaylanınca haftalık planda görünecek.",
+      "success"
+    );
     resetReservationForm();
     setOpenPanel(null);
     fetchData();
@@ -411,15 +421,16 @@ export default function RoomsPage() {
 
     if (!response.ok) {
       const data = await response.json();
-      alert(data.detail || "Talep güncellenemedi");
+      toast(data.detail || "Talep güncellenemedi", "error");
       return;
     }
 
     fetchData();
+    toast(action === "approve" ? "Mekan talebi onaylandı" : "Mekan talebi reddedildi", "success");
   }
 
   async function handleDeleteReservation(reservation: Reservation) {
-    if (!confirm("Bu program ve seçili tüm günleri silinsin mi?")) return;
+    if (!(await confirm("Bu program ve seçili tüm günleri silinsin mi?"))) return;
 
     const response = await apiFetch(
       `/room-reservations/${reservation.reservation_id}`,
@@ -430,11 +441,12 @@ export default function RoomsPage() {
     );
 
     if (!response.ok) {
-      alert("Program silinemedi");
+      toast("Program silinemedi", "error");
       return;
     }
 
     fetchData();
+    toast("Program silindi", "success");
   }
 
   function formatDate(date: string) {
@@ -1223,20 +1235,12 @@ function HeaderActionButton({
   onClick: () => void;
 }) {
   return (
-    <button
-      type="button"
+    <ActionPanelButton
+      title={label}
+      description={`${count} ${countLabel}`}
+      active={active}
       onClick={onClick}
-      className={`rounded-2xl border p-4 text-left shadow-sm transition ${
-        active
-          ? "border-sky-200 bg-sky-50 text-sky-700"
-          : "border-[#E6EEF9] bg-white text-slate-700 hover:bg-[#F8FBFF]"
-      }`}
-    >
-      <span className="block text-sm font-bold md:text-base">{label}</span>
-      <span className="mt-1 block text-xs font-semibold text-slate-400">
-        {count} {countLabel}
-      </span>
-    </button>
+    />
   );
 }
 
