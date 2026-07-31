@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import Sidebar from "@/components/Sidebar";
@@ -29,6 +29,7 @@ const permissionOptions = [
 
 export default function UsersPage() {
   const router = useRouter();
+  const editFormRef = useRef<HTMLElement | null>(null);
 
   const [users, setUsers] = useState<UserItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -112,6 +113,13 @@ export default function UsersPage() {
     setEditWorkStart(user.work_start_time ? user.work_start_time.slice(0, 5) : "");
     setEditWorkEnd(user.work_end_time ? user.work_end_time.slice(0, 5) : "");
     setEditAnnualLeaveDays(String(user.annual_leave_days || 0));
+
+    window.requestAnimationFrame(() => {
+      editFormRef.current?.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      });
+    });
 
     const response = await apiFetch(`/users/${user.id}/permissions`, {
       headers: authHeaders(),
@@ -385,7 +393,10 @@ export default function UsersPage() {
             )}
 
             {editingUser && (
-              <section className="rounded-2xl border border-[#E6EEF9] bg-white p-4 shadow-sm md:rounded-3xl md:p-5">
+              <section
+                ref={editFormRef}
+                className="rounded-2xl border border-[#E6EEF9] bg-white p-4 shadow-sm md:rounded-3xl md:p-5"
+              >
                 <form onSubmit={handleUpdateUser} className="space-y-4">
                   <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
                     <SectionTitle
