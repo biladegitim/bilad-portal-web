@@ -91,7 +91,7 @@ export default function RoomsPage() {
   const [loading, setLoading] = useState(true);
   const [isSuperAdmin, setIsSuperAdmin] = useState(false);
   const [canReviewRoomRequests, setCanReviewRoomRequests] = useState(false);
-  const [openPanel, setOpenPanel] = useState<"rooms" | "request" | "pending" | null>(null);
+  const [openPanel, setOpenPanel] = useState<"rooms" | "roomList" | "request" | "pending" | null>(null);
 
   const [roomName, setRoomName] = useState("");
   const [roomDescription, setRoomDescription] = useState("");
@@ -236,6 +236,7 @@ export default function RoomsPage() {
     setRoomDescription(room.description || "");
     const floor = getRoomFloor(room, roomFloorMap);
     setRoomFloor(floor === unassignedFloor ? "" : floor);
+    setOpenPanel("rooms");
   }
 
   function saveFloors(nextFloors: string[]) {
@@ -272,6 +273,7 @@ export default function RoomsPage() {
 
   async function handleRoomSubmit(e: React.FormEvent) {
     e.preventDefault();
+    const wasEditingRoom = editingRoomId !== null;
 
     const response = await apiFetch(
       editingRoomId ? `/rooms/${editingRoomId}` : "/rooms",
@@ -303,6 +305,9 @@ export default function RoomsPage() {
     }
 
     resetRoomForm();
+    if (wasEditingRoom) {
+      setOpenPanel("roomList");
+    }
     fetchData();
   }
 
@@ -575,7 +580,28 @@ export default function RoomsPage() {
                       </div>
                     </form>
 
-                    <div className="mt-4 space-y-4">
+                  </section>
+                )}
+
+                {isSuperAdmin && openPanel === "roomList" && (
+                  <section className="rounded-2xl border border-[#E6EEF9] bg-white p-4 shadow-sm md:rounded-3xl md:p-5">
+                    <div className="mb-4 flex items-center justify-between gap-3">
+                      <SectionTitle
+                        icon="🏢"
+                        title="Mekanlar"
+                        description="Kayıtlı mekanları görüntüleyin, düzenleyin veya silin."
+                      />
+
+                      <button
+                        type="button"
+                        onClick={() => setOpenPanel(null)}
+                        className="rounded-2xl border border-[#E6EEF9] bg-white px-4 py-2 text-sm font-medium text-slate-600 transition hover:bg-slate-50"
+                      >
+                        Kapat
+                      </button>
+                    </div>
+
+                    <div className="space-y-4">
                       {floorOptions.length === 0 ? (
                         <InfoBox>Önce kat ekleyin, ardından mekanları ilgili kata bağlayın.</InfoBox>
                       ) : (
@@ -1101,10 +1127,22 @@ export default function RoomsPage() {
                       <HeaderActionButton
                         active={openPanel === "rooms"}
                         label="Mekan Yönetimi"
+                        count={floorOptions.filter((floor) => floor !== unassignedFloor).length}
+                        countLabel="kat"
+                        onClick={() =>
+                          setOpenPanel(openPanel === "rooms" ? null : "rooms")
+                        }
+                      />
+                    )}
+
+                    {isSuperAdmin && (
+                      <HeaderActionButton
+                        active={openPanel === "roomList"}
+                        label="Mekanlar"
                         count={rooms.length}
                         countLabel="mekan"
                         onClick={() =>
-                          setOpenPanel(openPanel === "rooms" ? null : "rooms")
+                          setOpenPanel(openPanel === "roomList" ? null : "roomList")
                         }
                       />
                     )}
