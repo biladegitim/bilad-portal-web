@@ -490,7 +490,8 @@ export default function Home() {
                         </span>
 
                         <span className="text-sm font-bold text-sky-600">
-                          {formatLocalDateShort(event.start_time)}
+                          {formatLocalDateShort(event.start_time)} ·{" "}
+                          {formatLocalTime(event.start_time)}
                         </span>
                       </div>
                     </div>
