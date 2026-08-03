@@ -34,7 +34,7 @@ type AnnualLeaveBalance = {
   available_days: number;
 };
 
-type LeavePanel = "annual" | "team" | "mine";
+type LeavePanel = "annual" | "team" | "archive" | "mine";
 
 function calculateLeaveDays(startTime: string, endTime: string) {
   if (!startTime || !endTime) return 0;
@@ -49,6 +49,17 @@ function calculateLeaveDays(startTime: string, endTime: string) {
   const dayMs = 24 * 60 * 60 * 1000;
 
   return Math.max(Math.floor((endDay.getTime() - startDay.getTime()) / dayMs) + 1, 1);
+}
+
+function isArchivedLeave(leave: LeaveItem) {
+  if (leave.status !== "approved") return false;
+
+  const end = new Date(leave.end_time);
+  const today = new Date();
+  const endDay = new Date(end.getFullYear(), end.getMonth(), end.getDate());
+  const todayDay = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+
+  return endDay < todayDay;
 }
 
 export default function LeavesPage() {
@@ -66,6 +77,8 @@ export default function LeavesPage() {
   const [reason, setReason] = useState("");
   const [leaveType, setLeaveType] = useState("standard");
   const [activePanel, setActivePanel] = useState<LeavePanel | null>(null);
+  const activeTeamLeaves = teamLeaves.filter((leave) => !isArchivedLeave(leave));
+  const archivedTeamLeaves = teamLeaves.filter(isArchivedLeave);
 
   const fetchLeaves = useCallback(async () => {
     try {
@@ -356,7 +369,7 @@ export default function LeavesPage() {
               </form>
             </section>
 
-                <section className="grid grid-cols-1 gap-3 md:grid-cols-3">
+                <section className="grid grid-cols-1 gap-3 md:grid-cols-4">
                   <PanelButton
                     label="Yıllık İzin Yönetimi"
                     count={annualLeaveBalances.length}
@@ -371,12 +384,24 @@ export default function LeavesPage() {
 
                   <PanelButton
                     label="İzin Yönetimi"
-                    count={teamLeaves.length}
+                    count={activeTeamLeaves.length}
                     active={activePanel === "team"}
-                    disabled={teamLeaves.length === 0}
+                    disabled={activeTeamLeaves.length === 0}
                     onClick={() =>
                       setActivePanel((current) =>
                         current === "team" ? null : "team"
+                      )
+                    }
+                  />
+
+                  <PanelButton
+                    label="Arşiv"
+                    count={archivedTeamLeaves.length}
+                    active={activePanel === "archive"}
+                    disabled={archivedTeamLeaves.length === 0}
+                    onClick={() =>
+                      setActivePanel((current) =>
+                        current === "archive" ? null : "archive"
                       )
                     }
                   />
@@ -440,7 +465,7 @@ export default function LeavesPage() {
               </section>
             )}
 
-            {activePanel === "team" && teamLeaves.length > 0 && (
+            {activePanel === "team" && activeTeamLeaves.length > 0 && (
               <section className="rounded-2xl border border-[#E6EEF9] bg-white p-4 shadow-sm md:rounded-3xl md:p-5">
                 <div className="mb-4 flex justify-end">
                   <button
@@ -460,12 +485,12 @@ export default function LeavesPage() {
                   />
 
                   <span className="rounded-full bg-[#F8FBFF] px-3 py-1.5 text-xs font-semibold text-slate-500 md:text-sm">
-                    {teamLeaves.length} talep
+                    {activeTeamLeaves.length} talep
                   </span>
                 </div>
 
                 <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
-                  {teamLeaves.map((leave) => (
+                  {activeTeamLeaves.map((leave) => (
                     <LeaveCard
                       key={leave.id}
                       leave={leave}
@@ -475,6 +500,46 @@ export default function LeavesPage() {
                       admin
                       onApprove={() => updateLeaveStatus(leave.id, "approve")}
                       onReject={() => updateLeaveStatus(leave.id, "reject")}
+                      onDelete={() => deleteLeave(leave.id)}
+                    />
+                  ))}
+                </div>
+              </section>
+            )}
+
+            {activePanel === "archive" && archivedTeamLeaves.length > 0 && (
+              <section className="rounded-2xl border border-[#E6EEF9] bg-white p-4 shadow-sm md:rounded-3xl md:p-5">
+                <div className="mb-4 flex justify-end">
+                  <button
+                    type="button"
+                    onClick={() => setActivePanel(null)}
+                    className="h-10 rounded-2xl border border-[#E6EEF9] bg-white px-4 text-sm font-semibold text-slate-600 transition hover:bg-slate-50"
+                  >
+                    Kapat
+                  </button>
+                </div>
+
+                <div className="mb-4 flex items-center justify-between gap-3">
+                  <SectionTitle
+                    icon="🗄️"
+                    title="Arşiv"
+                    description="Tarihi geçmiş onaylanmış izinler."
+                  />
+
+                  <span className="rounded-full bg-[#F8FBFF] px-3 py-1.5 text-xs font-semibold text-slate-500 md:text-sm">
+                    {archivedTeamLeaves.length} izin
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
+                  {archivedTeamLeaves.map((leave) => (
+                    <LeaveCard
+                      key={leave.id}
+                      leave={leave}
+                      statusLabel={statusLabel}
+                      statusClass={statusClass}
+                      formatDate={formatDate}
+                      admin
                       onDelete={() => deleteLeave(leave.id)}
                     />
                   ))}
