@@ -29,6 +29,7 @@ type HomeData = {
     start_time: string;
     end_time: string;
     reason: string | null;
+    leave_type?: string | null;
   }[];
 };
 
@@ -173,6 +174,24 @@ function getReservationCardClasses(status: UsageStatus) {
   if (status === "future") return "border-amber-200 bg-amber-50";
 
   return "border-[#E6EEF9] bg-white";
+}
+
+function getLeaveTypeLabel(leaveType?: string | null) {
+  if (leaveType === "annual") return "Yıllık";
+  if (leaveType === "weekly") return "Haftalık";
+  if (leaveType === "report") return "Rapor";
+  if (leaveType === "excuse" || leaveType === "standard") return "Mazeret";
+
+  return "İzin";
+}
+
+function getLeaveTypeBadgeClasses(leaveType?: string | null) {
+  if (leaveType === "annual") return "bg-sky-100 text-sky-700";
+  if (leaveType === "weekly") return "bg-violet-100 text-violet-700";
+  if (leaveType === "report") return "bg-emerald-100 text-emerald-700";
+  if (leaveType === "excuse" || leaveType === "standard") return "bg-amber-100 text-amber-700";
+
+  return "bg-slate-100 text-slate-600";
 }
 
 export default function Home() {
@@ -512,9 +531,19 @@ export default function Home() {
                       key={leave.leave_id}
                       className="rounded-2xl border border-[#E6EEF9] bg-[#F8FBFF] p-3.5 md:p-4"
                     >
-                      <p className="text-sm font-semibold text-slate-800 md:text-base">
-                        {leave.full_name}
-                      </p>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <p className="text-sm font-semibold text-slate-800 md:text-base">
+                          {leave.full_name}
+                        </p>
+
+                        <span
+                          className={`rounded-full px-2.5 py-1 text-[11px] font-bold ${getLeaveTypeBadgeClasses(
+                            leave.leave_type
+                          )}`}
+                        >
+                          {getLeaveTypeLabel(leave.leave_type)}
+                        </span>
+                      </div>
 
                       <p className="mt-1 text-xs text-slate-500 md:text-sm">
                         {formatLeaveTime(leave.start_time)} -{" "}

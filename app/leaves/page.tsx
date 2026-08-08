@@ -8,7 +8,7 @@ import Sidebar from "@/components/Sidebar";
 import { apiFetch } from "@/lib/api";
 import { fetchProfileAccess } from "@/lib/access";
 import { authHeaders, getAccessToken, jsonAuthHeaders } from "@/lib/auth";
-import { formatLocalDateTime } from "@/lib/dateTime";
+import { formatLocalDate, formatLocalDateTime } from "@/lib/dateTime";
 import { markLeaveNotificationsRead } from "@/lib/notifications";
 
 type LeaveItem = {
@@ -17,7 +17,7 @@ type LeaveItem = {
   user_name?: string;
   start_time: string;
   end_time: string;
-  reason: string;
+  reason: string | null;
   leave_type: string;
   day_count: number;
   status: string;
@@ -35,6 +35,32 @@ type AnnualLeaveBalance = {
 };
 
 type LeavePanel = "annual" | "team" | "archive" | "mine";
+
+const leaveTypeOptions = [
+  { value: "annual", label: "Yıllık izin", description: "Yıllık hakkınızdan düşer" },
+  { value: "weekly", label: "Haftalık izin", description: "Otomatik onaylanır" },
+  { value: "report", label: "Rapor", description: "Otomatik onaylanır" },
+  { value: "excuse", label: "Mazeret", description: "Onaya gönderilir" },
+];
+
+function getLeaveTypeLabel(leaveType: string) {
+  if (leaveType === "annual") return "Yıllık izin";
+  if (leaveType === "weekly") return "Haftalık izin";
+  if (leaveType === "report") return "Rapor";
+  if (leaveType === "excuse" || leaveType === "standard") return "Mazeret izni";
+
+  return "İzin";
+}
+
+function shouldShowLeaveTime(leaveType: string) {
+  return leaveType === "excuse" || leaveType === "standard";
+}
+
+function formatLeaveCardDate(leave: LeaveItem, value: string) {
+  return shouldShowLeaveTime(leave.leave_type)
+    ? formatLocalDateTime(value)
+    : formatLocalDate(value);
+}
 
 function calculateLeaveDays(startTime: string, endTime: string) {
   if (!startTime || !endTime) return 0;
@@ -75,8 +101,9 @@ export default function LeavesPage() {
   const [startTime, setStartTime] = useState("");
   const [endTime, setEndTime] = useState("");
   const [reason, setReason] = useState("");
-  const [leaveType, setLeaveType] = useState("standard");
+  const [leaveType, setLeaveType] = useState("excuse");
   const [activePanel, setActivePanel] = useState<LeavePanel | null>(null);
+  const isExcuseLeave = leaveType === "excuse";
   const activeTeamLeaves = teamLeaves.filter((leave) => !isArchivedLeave(leave));
   const archivedTeamLeaves = teamLeaves.filter(isArchivedLeave);
 
@@ -175,17 +202,19 @@ export default function LeavesPage() {
     e.preventDefault();
 
     const myBalance = myAnnualLeaveBalance;
+    const requestStartTime = isExcuseLeave ? startTime : `${startTime}T00:00`;
+    const requestEndTime = isExcuseLeave ? endTime : `${endTime}T23:59`;
 
     if (leaveType === "annual" && myBalance) {
-      const start = new Date(startTime);
-      const end = new Date(endTime);
+      const start = new Date(requestStartTime);
+      const end = new Date(requestEndTime);
 
       if (start.getFullYear() !== end.getFullYear()) {
         alert("Yıllık izin talebi tek takvim yılı içinde olmalıdır");
         return;
       }
 
-      const requestedDays = calculateLeaveDays(startTime, endTime);
+      const requestedDays = calculateLeaveDays(requestStartTime, requestEndTime);
 
       if (requestedDays > myBalance.available_days) {
         alert(
@@ -201,9 +230,9 @@ export default function LeavesPage() {
       method: "POST",
       headers: jsonAuthHeaders(),
       body: JSON.stringify({
-        start_time: startTime,
-        end_time: endTime,
-        reason,
+        start_time: requestStartTime,
+        end_time: requestEndTime,
+        reason: isExcuseLeave ? reason : null,
         leave_type: leaveType,
       }),
     });
@@ -216,7 +245,7 @@ export default function LeavesPage() {
     setStartTime("");
     setEndTime("");
     setReason("");
-    setLeaveType("standard");
+    setLeaveType("excuse");
     fetchLeaves();
   }
 
@@ -268,10 +297,6 @@ export default function LeavesPage() {
     return "bg-amber-50 text-amber-700";
   }
 
-  function formatDate(date: string) {
-    return formatLocalDateTime(date);
-  }
-
   return (
     <div className="flex min-h-screen bg-[#F6F9FF]">
       <Sidebar />
@@ -302,36 +327,60 @@ export default function LeavesPage() {
                     <SectionTitle
                       icon="📝"
                       title="Yeni İzin Talebi"
-                      description="Başlangıç, bitiş ve izin açıklamasını girin."
+                      description={
+                        isExcuseLeave
+                          ? "Mazeret için saat aralığı ve açıklama girin."
+                          : "Tarih aralığını seçin; bu izin türü otomatik onaylanır."
+                      }
                     />
 
                 <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
                   <DateInput
-                    label="Başlangıç"
+                    label={isExcuseLeave ? "Başlangıç" : "Başlangıç Tarihi"}
                     value={startTime}
                     setValue={setStartTime}
+                    type={isExcuseLeave ? "datetime-local" : "date"}
                     required
                   />
 
                   <DateInput
-                    label="Bitiş"
+                    label={isExcuseLeave ? "Bitiş" : "Bitiş Tarihi"}
                     value={endTime}
                     setValue={setEndTime}
+                    type={isExcuseLeave ? "datetime-local" : "date"}
                     required
                   />
 
                   <div className="lg:col-span-2">
-                    <label className="flex items-center gap-2 rounded-2xl border border-[#E6EEF9] bg-[#F8FBFF] p-3 text-sm font-semibold text-slate-700">
-                      <input
-                        type="checkbox"
-                        checked={leaveType === "annual"}
-                        onChange={(e) =>
-                          setLeaveType(e.target.checked ? "annual" : "standard")
-                        }
-                        className="h-4 w-4 rounded border-slate-300"
-                      />
-                      Yıllık izin
-                    </label>
+                    <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-4">
+                      {leaveTypeOptions.map((option) => {
+                        const active = leaveType === option.value;
+
+                        return (
+                          <button
+                            key={option.value}
+                            type="button"
+                            onClick={() => {
+                              setLeaveType(option.value);
+                              setStartTime("");
+                              setEndTime("");
+                            }}
+                            className={`rounded-2xl border p-3 text-left transition ${
+                              active
+                                ? "border-sky-300 bg-sky-50 text-sky-700"
+                                : "border-[#E6EEF9] bg-[#F8FBFF] text-slate-700 hover:bg-white"
+                            }`}
+                          >
+                            <span className="block text-sm font-bold">
+                              {option.label}
+                            </span>
+                            <span className="mt-1 block text-xs font-semibold text-slate-400">
+                              {option.description}
+                            </span>
+                          </button>
+                        );
+                      })}
+                    </div>
 
                     {myAnnualLeaveBalance && (
                       <p className="mt-2 text-xs text-slate-500 md:text-sm">
@@ -345,19 +394,21 @@ export default function LeavesPage() {
                     )}
                   </div>
 
-                  <div className="lg:col-span-2">
-                    <label className="mb-1.5 block text-xs font-semibold text-slate-500">
-                      Açıklama
-                    </label>
+                  {isExcuseLeave && (
+                    <div className="lg:col-span-2">
+                      <label className="mb-1.5 block text-xs font-semibold text-slate-500">
+                        Açıklama
+                      </label>
 
-                    <textarea
-                      value={reason}
-                      onChange={(e) => setReason(e.target.value)}
-                      className="h-24 w-full resize-none rounded-2xl border border-[#E6EEF9] bg-[#F8FBFF] px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-sky-400 focus:bg-white focus:ring-4 focus:ring-sky-100"
-                      placeholder="İzin sebebi..."
-                      required
-                    />
-                  </div>
+                      <textarea
+                        value={reason}
+                        onChange={(e) => setReason(e.target.value)}
+                        className="h-24 w-full resize-none rounded-2xl border border-[#E6EEF9] bg-[#F8FBFF] px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-sky-400 focus:bg-white focus:ring-4 focus:ring-sky-100"
+                        placeholder="İzin sebebi..."
+                        required
+                      />
+                    </div>
+                  )}
                 </div>
 
                 <button
@@ -496,7 +547,6 @@ export default function LeavesPage() {
                       leave={leave}
                       statusLabel={statusLabel}
                       statusClass={statusClass}
-                      formatDate={formatDate}
                       admin
                       onApprove={() => updateLeaveStatus(leave.id, "approve")}
                       onReject={() => updateLeaveStatus(leave.id, "reject")}
@@ -538,7 +588,6 @@ export default function LeavesPage() {
                       leave={leave}
                       statusLabel={statusLabel}
                       statusClass={statusClass}
-                      formatDate={formatDate}
                       admin
                       onDelete={() => deleteLeave(leave.id)}
                     />
@@ -583,7 +632,6 @@ export default function LeavesPage() {
                       leave={leave}
                       statusLabel={statusLabel}
                       statusClass={statusClass}
-                      formatDate={formatDate}
                       admin={isSuperAdmin}
                       onApprove={isSuperAdmin ? () => updateLeaveStatus(leave.id, "approve") : undefined}
                       onReject={isSuperAdmin ? () => updateLeaveStatus(leave.id, "reject") : undefined}
@@ -661,7 +709,6 @@ function LeaveCard({
   leave,
   statusLabel,
   statusClass,
-  formatDate,
   admin = false,
   onApprove,
   onReject,
@@ -670,7 +717,6 @@ function LeaveCard({
   leave: LeaveItem;
   statusLabel: (status: string) => string;
   statusClass: (status: string) => string;
-  formatDate: (date: string) => string;
   admin?: boolean;
   onApprove?: () => void;
   onReject?: () => void;
@@ -685,10 +731,11 @@ function LeaveCard({
           </h3>
 
           <p className="mt-1 text-xs leading-5 text-slate-500 md:text-sm">
-            {formatDate(leave.start_time)} → {formatDate(leave.end_time)}
+            {formatLeaveCardDate(leave, leave.start_time)} →{" "}
+            {formatLeaveCardDate(leave, leave.end_time)}
           </p>
           <p className="mt-1 text-xs font-semibold text-sky-600 md:text-sm">
-            {leave.leave_type === "annual" ? "Yıllık izin" : "Standart izin"}
+            {getLeaveTypeLabel(leave.leave_type)}
             {leave.day_count ? ` - ${leave.day_count} gün` : ""}
           </p>
         </div>
@@ -702,9 +749,11 @@ function LeaveCard({
         </span>
       </div>
 
-      <p className="rounded-2xl bg-white p-3 text-sm leading-6 text-slate-600">
-        {leave.reason}
-      </p>
+      {leave.reason && (
+        <p className="rounded-2xl bg-white p-3 text-sm leading-6 text-slate-600">
+          {leave.reason}
+        </p>
+      )}
 
       {(admin || onDelete) && (
         <div className="mt-4 grid grid-cols-1 gap-2 sm:grid-cols-3">
@@ -768,11 +817,13 @@ function DateInput({
   label,
   value,
   setValue,
+  type = "datetime-local",
   required = false,
 }: {
   label: string;
   value: string;
   setValue: (value: string) => void;
+  type?: "date" | "datetime-local";
   required?: boolean;
 }) {
   return (
@@ -782,7 +833,7 @@ function DateInput({
       </label>
 
       <input
-        type="datetime-local"
+        type={type}
         value={value}
         onChange={(e) => setValue(e.target.value)}
         required={required}
