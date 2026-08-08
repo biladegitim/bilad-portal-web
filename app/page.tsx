@@ -185,13 +185,8 @@ function getLeaveTypeLabel(leaveType?: string | null) {
   return "İzin";
 }
 
-function getLeaveTypeBadgeClasses(leaveType?: string | null) {
-  if (leaveType === "annual") return "bg-sky-100 text-sky-700";
-  if (leaveType === "weekly") return "bg-violet-100 text-violet-700";
-  if (leaveType === "report") return "bg-emerald-100 text-emerald-700";
-  if (leaveType === "excuse" || leaveType === "standard") return "bg-amber-100 text-amber-700";
-
-  return "bg-slate-100 text-slate-600";
+function getLeaveTypeBadgeClasses() {
+  return "bg-sky-100 text-sky-700 ring-1 ring-sky-200";
 }
 
 export default function Home() {
@@ -529,26 +524,24 @@ export default function Home() {
                   data.today_approved_leaves.map((leave) => (
                     <div
                       key={leave.leave_id}
-                      className="rounded-2xl border border-[#E6EEF9] bg-[#F8FBFF] p-3.5 md:p-4"
+                      className="relative rounded-2xl border border-[#E6EEF9] bg-[#F8FBFF] p-3.5 pb-9 shadow-sm md:p-4 md:pb-10"
                     >
                       <div className="flex flex-wrap items-center gap-2">
                         <p className="text-sm font-semibold text-slate-800 md:text-base">
                           {leave.full_name}
                         </p>
-
-                        <span
-                          className={`rounded-full px-2.5 py-1 text-[11px] font-bold ${getLeaveTypeBadgeClasses(
-                            leave.leave_type
-                          )}`}
-                        >
-                          {getLeaveTypeLabel(leave.leave_type)}
-                        </span>
                       </div>
 
                       <p className="mt-1 text-xs text-slate-500 md:text-sm">
                         {formatLeaveTime(leave.start_time)} -{" "}
                         {formatLeaveTime(leave.end_time)}
                       </p>
+
+                      <span
+                        className={`absolute bottom-3 right-3 rounded-full px-2.5 py-1 text-[11px] font-bold ${getLeaveTypeBadgeClasses()}`}
+                      >
+                        {getLeaveTypeLabel(leave.leave_type)}
+                      </span>
                     </div>
                   ))
                 )}

@@ -406,7 +406,7 @@ export default function LeavesPage() {
                   />
 
                   <div className="lg:col-span-2">
-                    <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-4">
+                    <div className="grid grid-cols-2 gap-2.5 md:gap-3">
                       {leaveTypeOptions.map((option) => {
                         const active = leaveType === option.value;
                         const weeklyLimitReached =
@@ -428,16 +428,27 @@ export default function LeavesPage() {
                               setStartTime("");
                               setEndTime("");
                             }}
-                            className={`rounded-2xl border p-3 text-left transition ${
+                            className={`min-h-24 rounded-2xl border p-3.5 text-left shadow-sm transition md:min-h-28 md:p-4 ${
                               active
-                                ? "border-sky-300 bg-sky-50 text-sky-700"
+                                ? "border-sky-300 bg-gradient-to-br from-sky-50 to-white text-sky-700 shadow-sky-100"
                                 : weeklyLimitReached
-                                  ? "cursor-not-allowed border-slate-200 bg-slate-50 text-slate-300"
-                                : "border-[#E6EEF9] bg-[#F8FBFF] text-slate-700 hover:bg-white"
+                                  ? "cursor-not-allowed border-slate-200 bg-slate-50 text-slate-300 shadow-none"
+                                : "border-[#E6EEF9] bg-white text-slate-700 hover:border-sky-200 hover:bg-[#F8FBFF]"
                             }`}
                           >
-                            <span className="block text-sm font-bold">
-                              {option.label}
+                            <span className="flex items-start justify-between gap-2">
+                              <span className="text-sm font-bold md:text-base">
+                                {option.label}
+                              </span>
+                              <span
+                                className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border text-[10px] font-black ${
+                                  active
+                                    ? "border-sky-300 bg-sky-600 text-white"
+                                    : "border-slate-200 bg-slate-50 text-slate-300"
+                                }`}
+                              >
+                                {active ? "✓" : ""}
+                              </span>
                             </span>
                             <span className="mt-1 block text-xs font-semibold text-slate-400">
                               {weeklyLimitReached ? "Bu ay hakkınız doldu" : optionDescription}
