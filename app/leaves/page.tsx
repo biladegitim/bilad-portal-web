@@ -34,6 +34,15 @@ type AnnualLeaveBalance = {
   available_days: number;
 };
 
+type WeeklyLeaveBalance = {
+  year: number;
+  month: number;
+  total_days: number;
+  used_days: number;
+  remaining_days: number;
+  available_days: number;
+};
+
 type LeavePanel = "annual" | "team" | "archive" | "mine";
 
 const leaveTypeOptions = [
@@ -77,6 +86,19 @@ function calculateLeaveDays(startTime: string, endTime: string) {
   return Math.max(Math.floor((endDay.getTime() - startDay.getTime()) / dayMs) + 1, 1);
 }
 
+function isWeeklyBalanceMonth(dateValue: string, balance: WeeklyLeaveBalance | null) {
+  if (!dateValue || !balance) return false;
+
+  const selectedDate = new Date(dateValue);
+
+  if (Number.isNaN(selectedDate.getTime())) return false;
+
+  return (
+    selectedDate.getFullYear() === balance.year &&
+    selectedDate.getMonth() + 1 === balance.month
+  );
+}
+
 function isArchivedLeave(leave: LeaveItem) {
   if (leave.status !== "approved") return false;
 
@@ -95,6 +117,7 @@ export default function LeavesPage() {
   const [teamLeaves, setTeamLeaves] = useState<LeaveItem[]>([]);
   const [annualLeaveBalances, setAnnualLeaveBalances] = useState<AnnualLeaveBalance[]>([]);
   const [myAnnualLeaveBalance, setMyAnnualLeaveBalance] = useState<AnnualLeaveBalance | null>(null);
+  const [myWeeklyLeaveBalance, setMyWeeklyLeaveBalance] = useState<WeeklyLeaveBalance | null>(null);
   const [loading, setLoading] = useState(true);
   const [isSuperAdmin, setIsSuperAdmin] = useState(false);
 
@@ -124,6 +147,7 @@ export default function LeavesPage() {
             }
           : null
       );
+      setMyWeeklyLeaveBalance(myData.weekly_leave_balance || null);
 
       const teamResponse = await apiFetch("/team-leaves", {
         headers: authHeaders(),
@@ -155,6 +179,7 @@ export default function LeavesPage() {
       setTeamLeaves([]);
       setAnnualLeaveBalances([]);
       setMyAnnualLeaveBalance(null);
+      setMyWeeklyLeaveBalance(null);
     } finally {
       setLoading(false);
     }
@@ -205,6 +230,34 @@ export default function LeavesPage() {
     const requestStartTime = isExcuseLeave ? startTime : `${startTime}T00:00`;
     const requestEndTime = isExcuseLeave ? endTime : `${endTime}T23:59`;
 
+    if (
+      leaveType === "weekly" &&
+      myWeeklyLeaveBalance &&
+      isWeeklyBalanceMonth(requestStartTime, myWeeklyLeaveBalance)
+    ) {
+      const start = new Date(requestStartTime);
+      const end = new Date(requestEndTime);
+
+      if (
+        start.getFullYear() !== end.getFullYear() ||
+        start.getMonth() !== end.getMonth()
+      ) {
+        alert("Haftalık izin talebi tek takvim ayı içinde olmalıdır");
+        return;
+      }
+
+      const requestedDays = calculateLeaveDays(requestStartTime, requestEndTime);
+
+      if (requestedDays > myWeeklyLeaveBalance.available_days) {
+        alert(
+          myWeeklyLeaveBalance.available_days <= 0
+            ? "Bu ay haftalık izin hakkınız doldu"
+            : `Bu ay haftalık izin hakkınız ${myWeeklyLeaveBalance.available_days} gün kaldı`
+        );
+        return;
+      }
+    }
+
     if (leaveType === "annual" && myBalance) {
       const start = new Date(requestStartTime);
       const end = new Date(requestEndTime);
@@ -238,7 +291,8 @@ export default function LeavesPage() {
     });
 
     if (!response.ok) {
-      alert("İzin oluşturulamadı");
+      const errorData = await response.json().catch(() => null);
+      alert(errorData?.detail || "İzin oluşturulamadı");
       return;
     }
 
@@ -355,11 +409,20 @@ export default function LeavesPage() {
                     <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-4">
                       {leaveTypeOptions.map((option) => {
                         const active = leaveType === option.value;
+                        const weeklyLimitReached =
+                          option.value === "weekly" &&
+                          isWeeklyBalanceMonth(startTime, myWeeklyLeaveBalance) &&
+                          (myWeeklyLeaveBalance?.available_days ?? 1) <= 0;
+                        const optionDescription =
+                          option.value === "weekly" && myWeeklyLeaveBalance
+                            ? `${myWeeklyLeaveBalance.available_days}/${myWeeklyLeaveBalance.total_days} gün kaldı`
+                            : option.description;
 
                         return (
                           <button
                             key={option.value}
                             type="button"
+                            disabled={weeklyLimitReached}
                             onClick={() => {
                               setLeaveType(option.value);
                               setStartTime("");
@@ -368,6 +431,8 @@ export default function LeavesPage() {
                             className={`rounded-2xl border p-3 text-left transition ${
                               active
                                 ? "border-sky-300 bg-sky-50 text-sky-700"
+                                : weeklyLimitReached
+                                  ? "cursor-not-allowed border-slate-200 bg-slate-50 text-slate-300"
                                 : "border-[#E6EEF9] bg-[#F8FBFF] text-slate-700 hover:bg-white"
                             }`}
                           >
@@ -375,7 +440,7 @@ export default function LeavesPage() {
                               {option.label}
                             </span>
                             <span className="mt-1 block text-xs font-semibold text-slate-400">
-                              {option.description}
+                              {weeklyLimitReached ? "Bu ay hakkınız doldu" : optionDescription}
                             </span>
                           </button>
                         );
@@ -390,6 +455,14 @@ export default function LeavesPage() {
                         </span>
                         {myAnnualLeaveBalance.pending_days > 0 &&
                           ` (${myAnnualLeaveBalance.available_days} gün kullanılabilir, ${myAnnualLeaveBalance.pending_days} gün onay bekliyor)`}
+                      </p>
+                    )}
+                    {myWeeklyLeaveBalance && (
+                      <p className="mt-1 text-xs text-slate-500 md:text-sm">
+                        Bu ay kalan haftalık izin hakkınız:{" "}
+                        <span className="font-semibold text-sky-700">
+                          {myWeeklyLeaveBalance.available_days} gün
+                        </span>
                       </p>
                     )}
                   </div>
