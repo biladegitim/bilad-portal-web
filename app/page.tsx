@@ -185,10 +185,6 @@ function getLeaveTypeLabel(leaveType?: string | null) {
   return "İzin";
 }
 
-function getLeaveTypeBadgeClasses() {
-  return "bg-sky-100 text-sky-700 ring-1 ring-sky-200";
-}
-
 export default function Home() {
   const router = useRouter();
 
@@ -537,9 +533,7 @@ export default function Home() {
                         {formatLeaveTime(leave.end_time)}
                       </p>
 
-                      <span
-                        className={`absolute bottom-3 right-3 rounded-full px-2.5 py-1 text-[11px] font-bold ${getLeaveTypeBadgeClasses()}`}
-                      >
+                      <span className="absolute bottom-3 right-3 text-[11px] font-bold text-sky-700">
                         {getLeaveTypeLabel(leave.leave_type)}
                       </span>
                     </div>

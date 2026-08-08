@@ -406,18 +406,13 @@ export default function LeavesPage() {
                   />
 
                   <div className="lg:col-span-2">
-                    <div className="grid grid-cols-2 gap-2.5 md:gap-3">
+                    <div className="grid grid-cols-2 gap-x-5 gap-y-3">
                       {leaveTypeOptions.map((option) => {
                         const active = leaveType === option.value;
                         const weeklyLimitReached =
                           option.value === "weekly" &&
                           isWeeklyBalanceMonth(startTime, myWeeklyLeaveBalance) &&
                           (myWeeklyLeaveBalance?.available_days ?? 1) <= 0;
-                        const optionDescription =
-                          option.value === "weekly" && myWeeklyLeaveBalance
-                            ? `${myWeeklyLeaveBalance.available_days}/${myWeeklyLeaveBalance.total_days} gün kaldı`
-                            : option.description;
-
                         return (
                           <button
                             key={option.value}
@@ -428,31 +423,22 @@ export default function LeavesPage() {
                               setStartTime("");
                               setEndTime("");
                             }}
-                            className={`min-h-24 rounded-2xl border p-3.5 text-left shadow-sm transition md:min-h-28 md:p-4 ${
-                              active
-                                ? "border-sky-300 bg-gradient-to-br from-sky-50 to-white text-sky-700 shadow-sky-100"
-                                : weeklyLimitReached
-                                  ? "cursor-not-allowed border-slate-200 bg-slate-50 text-slate-300 shadow-none"
-                                : "border-[#E6EEF9] bg-white text-slate-700 hover:border-sky-200 hover:bg-[#F8FBFF]"
-                            }`}
+                            className={`flex items-center gap-2.5 text-left text-sm font-semibold transition md:text-base ${
+                              active ? "text-sky-700" : "text-slate-700"
+                            } ${weeklyLimitReached ? "cursor-not-allowed text-slate-300" : "hover:text-sky-700"}`}
                           >
-                            <span className="flex items-start justify-between gap-2">
-                              <span className="text-sm font-bold md:text-base">
-                                {option.label}
-                              </span>
-                              <span
-                                className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border text-[10px] font-black ${
-                                  active
-                                    ? "border-sky-300 bg-sky-600 text-white"
-                                    : "border-slate-200 bg-slate-50 text-slate-300"
-                                }`}
-                              >
-                                {active ? "✓" : ""}
-                              </span>
+                            <span
+                              className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-md border text-[10px] font-black ${
+                                active
+                                  ? "border-sky-500 bg-sky-600 text-white"
+                                  : weeklyLimitReached
+                                    ? "border-slate-200 bg-slate-50"
+                                    : "border-slate-300 bg-white"
+                              }`}
+                            >
+                              {active ? "✓" : ""}
                             </span>
-                            <span className="mt-1 block text-xs font-semibold text-slate-400">
-                              {weeklyLimitReached ? "Bu ay hakkınız doldu" : optionDescription}
-                            </span>
+                            <span>{option.label}</span>
                           </button>
                         );
                       })}
