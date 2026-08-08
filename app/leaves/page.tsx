@@ -424,7 +424,9 @@ export default function LeavesPage() {
                             type="button"
                             disabled={weeklyLimitReached}
                             onClick={() => {
-                              setLeaveType(option.value);
+                              setLeaveType((current) =>
+                                current === option.value ? "" : option.value
+                              );
                               setStartTime("");
                               setEndTime("");
                             }}
