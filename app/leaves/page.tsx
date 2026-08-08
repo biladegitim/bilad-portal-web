@@ -124,7 +124,7 @@ export default function LeavesPage() {
   const [startTime, setStartTime] = useState("");
   const [endTime, setEndTime] = useState("");
   const [reason, setReason] = useState("");
-  const [leaveType, setLeaveType] = useState("excuse");
+  const [leaveType, setLeaveType] = useState("");
   const [activePanel, setActivePanel] = useState<LeavePanel | null>(null);
   const isExcuseLeave = leaveType === "excuse";
   const activeTeamLeaves = teamLeaves.filter((leave) => !isArchivedLeave(leave));
@@ -226,6 +226,11 @@ export default function LeavesPage() {
   async function handleCreateLeave(e: React.FormEvent) {
     e.preventDefault();
 
+    if (!leaveType) {
+      alert("Lütfen izin türü seçin");
+      return;
+    }
+
     const myBalance = myAnnualLeaveBalance;
     const requestStartTime = isExcuseLeave ? startTime : `${startTime}T00:00`;
     const requestEndTime = isExcuseLeave ? endTime : `${endTime}T23:59`;
@@ -299,7 +304,7 @@ export default function LeavesPage() {
     setStartTime("");
     setEndTime("");
     setReason("");
-    setLeaveType("excuse");
+    setLeaveType("");
     fetchLeaves();
   }
 
@@ -430,7 +435,7 @@ export default function LeavesPage() {
                             <span
                               className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-md border text-[10px] font-black ${
                                 active
-                                  ? "border-sky-500 bg-sky-600 text-white"
+                                  ? "border-slate-400 bg-white text-black"
                                   : weeklyLimitReached
                                     ? "border-slate-200 bg-slate-50"
                                     : "border-slate-300 bg-white"
