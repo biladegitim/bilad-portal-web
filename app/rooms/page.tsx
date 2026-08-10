@@ -680,7 +680,7 @@ export default function RoomsPage() {
                 {openPanel === "request" && (
                   <section className="rounded-2xl border border-[#E6EEF9] bg-white p-4 shadow-sm md:rounded-3xl md:p-5">
                   <form onSubmit={handleReservationSubmit} className="space-y-4">
-                    <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                    <div className="flex items-start justify-between gap-3">
                       <SectionTitle
                         icon="📌"
                         title={editingId ? "Program Düzenle" : "Program Talebi Oluştur"}
@@ -693,7 +693,7 @@ export default function RoomsPage() {
                           resetReservationForm();
                           setOpenPanel(null);
                         }}
-                        className="h-10 w-fit rounded-2xl border border-[#E6EEF9] bg-white px-4 text-sm font-semibold text-slate-600 transition hover:bg-slate-50"
+                        className="ml-auto h-10 shrink-0 rounded-2xl border border-[#E6EEF9] bg-white px-4 text-sm font-semibold text-slate-600 transition hover:bg-slate-50"
                       >
                         {editingId ? "Düzenlemeyi İptal Et" : "Kapat"}
                       </button>

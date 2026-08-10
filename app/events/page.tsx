@@ -26,6 +26,7 @@ export default function EventsPage() {
   const [events, setEvents] = useState<EventItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
+  const [showArchive, setShowArchive] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
 
   const [title, setTitle] = useState("");
@@ -129,6 +130,19 @@ export default function EventsPage() {
     return formatLocalDateTime(date);
   }
 
+  function isArchivedEvent(event: EventItem) {
+    const comparisonDate = event.end_time || event.start_time;
+    const eventDate = new Date(comparisonDate);
+
+    if (Number.isNaN(eventDate.getTime())) return false;
+
+    return eventDate < new Date();
+  }
+
+  const activeEvents = events.filter((event) => !isArchivedEvent(event));
+  const archivedEvents = events.filter(isArchivedEvent);
+  const visibleEvents = showArchive ? archivedEvents : activeEvents;
+
   return (
     <div className="flex min-h-screen bg-[#F6F9FF]">
       <Sidebar />
@@ -147,6 +161,7 @@ export default function EventsPage() {
                   }
 
                   resetForm();
+                  setShowArchive(false);
                   setShowForm(true);
                 }}
                 className={
@@ -259,29 +274,55 @@ export default function EventsPage() {
 
             {!showForm && (
             <section className="rounded-2xl border border-[#E6EEF9] bg-white p-4 shadow-sm md:rounded-3xl md:p-5">
-              <div className="mb-4 flex items-center gap-3">
-                <span className="text-lg md:text-xl">📌</span>
+              <div className="mb-4 flex items-center justify-between gap-3">
+                <div className="flex items-center gap-3">
+                  <span className="text-lg md:text-xl">📌</span>
 
-                <div>
-                  <h2 className="text-lg font-bold text-slate-800 md:text-xl">
-                    Etkinlikler
-                  </h2>
+                  <div>
+                    <h2 className="text-lg font-bold text-slate-800 md:text-xl">
+                      {showArchive ? "Etkinlik Arşivi" : "Etkinlikler"}
+                    </h2>
 
-                  <p className="text-sm text-slate-400">
-                    {loading
-                      ? "Etkinlikler yükleniyor..."
-                      : `Toplam ${events.length} etkinlik bulundu.`}
-                  </p>
+                    <p className="text-sm text-slate-400">
+                      {loading
+                        ? "Etkinlikler yükleniyor..."
+                        : showArchive
+                          ? `${archivedEvents.length} arşiv kaydı`
+                          : `${activeEvents.length} güncel etkinlik`}
+                    </p>
+                  </div>
                 </div>
+
+                <button
+                  type="button"
+                  onClick={() => setShowArchive((current) => !current)}
+                  disabled={archivedEvents.length === 0 && !showArchive}
+                  className={`h-10 rounded-2xl px-4 text-sm font-semibold transition ${
+                    showArchive
+                      ? "border border-[#E6EEF9] bg-white text-slate-600 hover:bg-slate-50"
+                      : archivedEvents.length === 0
+                        ? "cursor-not-allowed bg-slate-50 text-slate-300"
+                        : "bg-sky-50 text-sky-700 hover:bg-sky-100"
+                  }`}
+                >
+                  {showArchive ? "Güncele Dön" : "Arşiv"}
+                </button>
               </div>
 
               {loading ? (
                 <InfoBox>Etkinlikler yükleniyor...</InfoBox>
-              ) : events.length === 0 ? (
-                <EmptyBox title="Henüz etkinlik yok" text="Yeni etkinlik eklendiğinde burada listelenecek." />
+              ) : visibleEvents.length === 0 ? (
+                <EmptyBox
+                  title={showArchive ? "Arşivde etkinlik yok" : "Henüz etkinlik yok"}
+                  text={
+                    showArchive
+                      ? "Günü geçen etkinlikler burada listelenecek."
+                      : "Yeni etkinlik eklendiğinde burada listelenecek."
+                  }
+                />
               ) : (
                 <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
-                  {events.map((event) => (
+                  {visibleEvents.map((event) => (
                     <article
                       key={event.id}
                       className="rounded-2xl border border-[#E6EEF9] bg-[#F8FBFF] p-4 transition hover:bg-white hover:shadow-sm"
