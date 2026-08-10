@@ -9,6 +9,7 @@ import { QRCodeSVG } from "qrcode.react";
 import { apiFetch } from "@/lib/api";
 import { authHeaders, clearAuthSession, getAccessToken, getStoredUserRole } from "@/lib/auth";
 import { FRONTEND_URL } from "@/lib/config";
+import { formatLocalDateTime } from "@/lib/dateTime";
 
 type QRData = {
   token: string;
@@ -58,13 +59,7 @@ export default function QRPage() {
   }, [router]);
 
   function formatExpireDate(date: string) {
-    return new Date(date).toLocaleString("tr-TR", {
-      day: "numeric",
-      month: "long",
-      year: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
+    return formatLocalDateTime(date);
   }
 
   function logout() {
