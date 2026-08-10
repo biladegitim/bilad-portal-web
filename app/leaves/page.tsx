@@ -120,6 +120,8 @@ export default function LeavesPage() {
   const [myWeeklyLeaveBalance, setMyWeeklyLeaveBalance] = useState<WeeklyLeaveBalance | null>(null);
   const [loading, setLoading] = useState(true);
   const [isSuperAdmin, setIsSuperAdmin] = useState(false);
+  const [canViewTeamLeaves, setCanViewTeamLeaves] = useState(false);
+  const [canViewAnnualLeaveBalances, setCanViewAnnualLeaveBalances] = useState(false);
 
   const [startTime, setStartTime] = useState("");
   const [endTime, setEndTime] = useState("");
@@ -156,6 +158,10 @@ export default function LeavesPage() {
       if (teamResponse.ok) {
         const teamData = await teamResponse.json();
         setTeamLeaves(teamData.leaves || []);
+        setCanViewTeamLeaves(true);
+      } else {
+        setTeamLeaves([]);
+        setCanViewTeamLeaves(false);
       }
 
       const balanceResponse = await apiFetch("/annual-leave-balances", {
@@ -165,14 +171,10 @@ export default function LeavesPage() {
       if (balanceResponse.ok) {
         const balanceData = await balanceResponse.json();
         setAnnualLeaveBalances(balanceData.balances || []);
-      } else if (myData.annual_leave_balance) {
-        setAnnualLeaveBalances([
-          {
-            user_id: 0,
-            full_name: "Ben",
-            ...myData.annual_leave_balance,
-          },
-        ]);
+        setCanViewAnnualLeaveBalances(true);
+      } else {
+        setAnnualLeaveBalances([]);
+        setCanViewAnnualLeaveBalances(false);
       }
     } catch {
       setMyLeaves([]);
@@ -180,6 +182,8 @@ export default function LeavesPage() {
       setAnnualLeaveBalances([]);
       setMyAnnualLeaveBalance(null);
       setMyWeeklyLeaveBalance(null);
+      setCanViewTeamLeaves(false);
+      setCanViewAnnualLeaveBalances(false);
     } finally {
       setLoading(false);
     }
@@ -222,6 +226,19 @@ export default function LeavesPage() {
     document.removeEventListener("visibilitychange", handleVisibilityChange);
   };
 }, [fetchLeaves, router]);
+
+  useEffect(() => {
+    if (activePanel === "annual" && !canViewAnnualLeaveBalances) {
+      setActivePanel(null);
+    }
+
+    if (
+      (activePanel === "team" || activePanel === "archive") &&
+      !canViewTeamLeaves
+    ) {
+      setActivePanel(null);
+    }
+  }, [activePanel, canViewAnnualLeaveBalances, canViewTeamLeaves]);
 
   async function handleCreateLeave(e: React.FormEvent) {
     e.preventDefault();
@@ -498,41 +515,47 @@ export default function LeavesPage() {
             </section>
 
                 <section className="grid grid-cols-1 gap-3 md:grid-cols-4">
-                  <PanelButton
-                    label="Yıllık İzin Yönetimi"
-                    count={annualLeaveBalances.length}
-                    active={activePanel === "annual"}
-                    disabled={annualLeaveBalances.length === 0}
-                    onClick={() =>
-                      setActivePanel((current) =>
-                        current === "annual" ? null : "annual"
-                      )
-                    }
-                  />
+                  {canViewAnnualLeaveBalances && (
+                    <PanelButton
+                      label="Yıllık İzin Yönetimi"
+                      count={annualLeaveBalances.length}
+                      active={activePanel === "annual"}
+                      disabled={annualLeaveBalances.length === 0}
+                      onClick={() =>
+                        setActivePanel((current) =>
+                          current === "annual" ? null : "annual"
+                        )
+                      }
+                    />
+                  )}
 
-                  <PanelButton
-                    label="İzin Yönetimi"
-                    count={activeTeamLeaves.length}
-                    active={activePanel === "team"}
-                    disabled={activeTeamLeaves.length === 0}
-                    onClick={() =>
-                      setActivePanel((current) =>
-                        current === "team" ? null : "team"
-                      )
-                    }
-                  />
+                  {canViewTeamLeaves && (
+                    <PanelButton
+                      label="İzin Yönetimi"
+                      count={activeTeamLeaves.length}
+                      active={activePanel === "team"}
+                      disabled={activeTeamLeaves.length === 0}
+                      onClick={() =>
+                        setActivePanel((current) =>
+                          current === "team" ? null : "team"
+                        )
+                      }
+                    />
+                  )}
 
-                  <PanelButton
-                    label="Arşiv"
-                    count={archivedTeamLeaves.length}
-                    active={activePanel === "archive"}
-                    disabled={archivedTeamLeaves.length === 0}
-                    onClick={() =>
-                      setActivePanel((current) =>
-                        current === "archive" ? null : "archive"
-                      )
-                    }
-                  />
+                  {canViewTeamLeaves && (
+                    <PanelButton
+                      label="Arşiv"
+                      count={archivedTeamLeaves.length}
+                      active={activePanel === "archive"}
+                      disabled={archivedTeamLeaves.length === 0}
+                      onClick={() =>
+                        setActivePanel((current) =>
+                          current === "archive" ? null : "archive"
+                        )
+                      }
+                    />
+                  )}
 
                   <PanelButton
                     label="Benim İzinlerim"
@@ -548,7 +571,7 @@ export default function LeavesPage() {
               </>
             )}
 
-            {activePanel === "annual" && annualLeaveBalances.length > 0 && (
+            {activePanel === "annual" && canViewAnnualLeaveBalances && annualLeaveBalances.length > 0 && (
               <section className="rounded-2xl border border-[#E6EEF9] bg-white p-4 shadow-sm md:rounded-3xl md:p-5">
                 <div className="mb-4 flex justify-end">
                   <button
@@ -593,7 +616,7 @@ export default function LeavesPage() {
               </section>
             )}
 
-            {activePanel === "team" && activeTeamLeaves.length > 0 && (
+            {activePanel === "team" && canViewTeamLeaves && activeTeamLeaves.length > 0 && (
               <section className="rounded-2xl border border-[#E6EEF9] bg-white p-4 shadow-sm md:rounded-3xl md:p-5">
                 <div className="mb-4 flex justify-end">
                   <button
@@ -634,7 +657,7 @@ export default function LeavesPage() {
               </section>
             )}
 
-            {activePanel === "archive" && archivedTeamLeaves.length > 0 && (
+            {activePanel === "archive" && canViewTeamLeaves && archivedTeamLeaves.length > 0 && (
               <section className="rounded-2xl border border-[#E6EEF9] bg-white p-4 shadow-sm md:rounded-3xl md:p-5">
                 <div className="mb-4 flex justify-end">
                   <button
