@@ -18,8 +18,6 @@ type UserItem = {
   work_start_time: string | null;
   work_end_time: string | null;
   annual_leave_days: number;
-  annual_leave_manual_used_days: number;
-  annual_leave_manual_used_year: number | null;
 };
 
 const permissionOptions = [
@@ -48,9 +46,7 @@ export default function UsersPage() {
   const [editWorkStart, setEditWorkStart] = useState("");
   const [editWorkEnd, setEditWorkEnd] = useState("");
   const [editAnnualLeaveDays, setEditAnnualLeaveDays] = useState("");
-  const [editAnnualLeaveManualUsedDays, setEditAnnualLeaveManualUsedDays] = useState("");
   const [selectedPermissions, setSelectedPermissions] = useState<string[]>([]);
-  const currentYear = new Date().getFullYear();
 
   const fetchUsers = useCallback(async () => {
     try {
@@ -116,11 +112,6 @@ export default function UsersPage() {
     setEditWorkStart(user.work_start_time ? user.work_start_time.slice(0, 5) : "");
     setEditWorkEnd(user.work_end_time ? user.work_end_time.slice(0, 5) : "");
     setEditAnnualLeaveDays(String(user.annual_leave_days || 0));
-    setEditAnnualLeaveManualUsedDays(
-      user.annual_leave_manual_used_year === currentYear
-        ? String(user.annual_leave_manual_used_days || 0)
-        : "0"
-    );
 
     const response = await apiFetch(`/users/${user.id}/permissions`, {
       headers: authHeaders(),
@@ -198,8 +189,6 @@ export default function UsersPage() {
           headers: jsonAuthHeaders(),
           body: JSON.stringify({
             annual_leave_days: Number(editAnnualLeaveDays || 0),
-            annual_leave_manual_used_days: Number(editAnnualLeaveManualUsedDays || 0),
-            annual_leave_manual_used_year: currentYear,
           }),
         }
       );
@@ -444,13 +433,6 @@ export default function UsersPage() {
                       setValue={setEditAnnualLeaveDays}
                     />
 
-                    <LabeledInput
-                      label={`Bu Yıl Manuel Kullanılan Yıllık İzin (${currentYear})`}
-                      type="number"
-                      value={editAnnualLeaveManualUsedDays}
-                      setValue={setEditAnnualLeaveManualUsedDays}
-                    />
-
                     <div>
                       <label className="mb-1.5 block text-xs font-semibold text-slate-500">
                         Yetkiler
@@ -577,14 +559,7 @@ export default function UsersPage() {
                             </td>
 
                             <td className="p-4 text-slate-600">
-                              <div>{user.annual_leave_days || 0} gün</div>
-                              {user.annual_leave_manual_used_year === currentYear &&
-                                user.annual_leave_manual_used_days > 0 && (
-                                  <div className="mt-1 text-xs text-slate-400">
-                                    Bu yıl manuel kullanılan:{" "}
-                                    {user.annual_leave_manual_used_days} gün
-                                  </div>
-                                )}
+                              {user.annual_leave_days || 0} gün
                             </td>
 
                             <td className="p-4">
@@ -663,13 +638,6 @@ export default function UsersPage() {
                             / {user.work_end_time?.slice(0, 5) || "-"}
                           </p>
                           <p>Yıllık izin: {user.annual_leave_days || 0} gün</p>
-                          {user.annual_leave_manual_used_year === currentYear &&
-                            user.annual_leave_manual_used_days > 0 && (
-                              <p>
-                                Bu yıl manuel kullanılan:{" "}
-                                {user.annual_leave_manual_used_days} gün
-                              </p>
-                            )}
                         </div>
 
                         <div className="mt-4 grid grid-cols-2 gap-3">
