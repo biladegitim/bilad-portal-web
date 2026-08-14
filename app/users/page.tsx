@@ -18,7 +18,7 @@ type UserItem = {
   work_start_time: string | null;
   work_end_time: string | null;
   annual_leave_days: number;
-  device_id: string | null;
+  device_id?: string | null;
 };
 
 const permissionOptions = [
@@ -266,10 +266,17 @@ export default function UsersPage() {
     return "bg-slate-100 text-slate-700";
   }
 
-  function deviceLabel(deviceId: string | null) {
+  function deviceLabel(deviceId: string | null | undefined) {
+    if (deviceId === undefined) return "Bilgi alınamadı";
     if (!deviceId) return "Tanımlı değil";
     if (deviceId.length <= 14) return deviceId;
     return `${deviceId.slice(0, 8)}...${deviceId.slice(-4)}`;
+  }
+
+  function deviceClass(deviceId: string | null | undefined) {
+    if (deviceId === undefined) return "bg-amber-50 text-amber-700";
+    if (deviceId) return "bg-emerald-50 text-emerald-700";
+    return "bg-slate-100 text-slate-500";
   }
 
   if (loading) {
@@ -572,12 +579,10 @@ export default function UsersPage() {
 
                             <td className="p-4">
                               <span
-                                title={user.device_id || "Tanımlı değil"}
-                                className={`rounded-full px-3 py-1 text-xs font-semibold ${
+                                title={deviceLabel(user.device_id)}
+                                className={`rounded-full px-3 py-1 text-xs font-semibold ${deviceClass(
                                   user.device_id
-                                    ? "bg-emerald-50 text-emerald-700"
-                                    : "bg-slate-100 text-slate-500"
-                                }`}
+                                )}`}
                               >
                                 {deviceLabel(user.device_id)}
                               </span>
