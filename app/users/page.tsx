@@ -339,19 +339,7 @@ export default function UsersPage() {
             <div className="flex h-14 items-center justify-between md:h-16">
               <div className="h-11 w-11 md:hidden" />
 
-              <div className="ml-auto flex flex-col gap-2 sm:flex-row">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowCreateForm(!showCreateForm);
-                    setShowDeviceConflicts(false);
-                    resetEdit();
-                  }}
-                  className="h-11 rounded-2xl bg-sky-600 px-5 text-sm font-semibold text-white shadow-sm transition hover:bg-sky-700"
-                >
-                  {showCreateForm ? "Formu Kapat" : "+ Kullanıcı Ekle"}
-                </button>
-
+              <div className="ml-auto flex flex-row items-center gap-2">
                 <button
                   type="button"
                   onClick={() => {
@@ -368,6 +356,18 @@ export default function UsersPage() {
                   }`}
                 >
                   !
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowCreateForm(!showCreateForm);
+                    setShowDeviceConflicts(false);
+                    resetEdit();
+                  }}
+                  className="h-11 rounded-2xl bg-sky-600 px-5 text-sm font-semibold text-white shadow-sm transition hover:bg-sky-700"
+                >
+                  {showCreateForm ? "Formu Kapat" : "+ Kullanıcı Ekle"}
                 </button>
               </div>
             </div>
