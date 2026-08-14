@@ -359,9 +359,9 @@ export default function UsersPage() {
                     setShowCreateForm(false);
                     resetEdit();
                   }}
-                  title="Cihaz çakışmaları"
-                  aria-label="Cihaz çakışmaları"
-                  className={`flex h-11 w-11 items-center justify-center rounded-2xl border text-lg font-black shadow-sm transition ${
+                  title="Uyarılar"
+                  aria-label="Uyarılar"
+                  className={`flex h-9 w-9 items-center justify-center rounded-xl border text-base font-black shadow-sm transition ${
                     showDeviceConflicts
                       ? "border-red-100 bg-red-50 text-red-600 hover:bg-red-100"
                       : "border-[#E6EEF9] bg-white text-slate-500 hover:bg-slate-50"
@@ -557,7 +557,7 @@ export default function UsersPage() {
                 <div className="mb-4 flex items-center justify-between gap-3">
                   <SectionTitle
                     icon="📱"
-                    title="Cihaz Çakışmaları"
+                    title="Uyarılar"
                     description="Farklı cihazdan QR okutma denemeleri."
                   />
 
