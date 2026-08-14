@@ -29,6 +29,7 @@ type AnnualLeaveBalance = {
   year: number;
   total_days: number;
   used_days: number;
+  manual_used_days?: number;
   pending_days: number;
   remaining_days: number;
   available_days: number;
@@ -606,6 +607,9 @@ export default function LeavesPage() {
                         <span>Kalan: {balance.remaining_days} gün</span>
                         <span>Kullanılan: {balance.used_days} gün</span>
                         <span>Bekleyen: {balance.pending_days} gün</span>
+                        {balance.manual_used_days ? (
+                          <span>Manuel: {balance.manual_used_days} gün</span>
+                        ) : null}
                         <span className="font-semibold text-sky-700">
                           Kullanılabilir: {balance.available_days} gün
                         </span>
