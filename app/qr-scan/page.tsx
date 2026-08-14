@@ -19,6 +19,27 @@ function getOrCreateDeviceId() {
   return deviceId;
 }
 
+function getDeviceName() {
+  const userAgentData = (
+    navigator as Navigator & {
+      userAgentData?: { platform?: string; brands?: { brand: string }[] };
+    }
+  ).userAgentData;
+
+  if (userAgentData?.platform) {
+    const browser = userAgentData.brands?.[0]?.brand;
+    return browser ? `${userAgentData.platform} / ${browser}` : userAgentData.platform;
+  }
+
+  const userAgent = navigator.userAgent;
+  if (/iPhone/i.test(userAgent)) return "iPhone";
+  if (/iPad/i.test(userAgent)) return "iPad";
+  if (/Android/i.test(userAgent)) return "Android";
+  if (/Windows/i.test(userAgent)) return "Windows";
+  if (/Macintosh|Mac OS/i.test(userAgent)) return "Mac";
+  return "Bilinmeyen cihaz";
+}
+
 function isExpectedVideoAbort(reason: unknown) {
   const name =
     reason instanceof DOMException || reason instanceof Error
@@ -200,6 +221,7 @@ export default function QRScanPage() {
                   body: JSON.stringify({
                     token,
                     device_id: deviceId,
+                    device_name: getDeviceName(),
                   }),
                 }
               );

@@ -17,6 +17,27 @@ function getOrCreateDeviceId() {
   return deviceId;
 }
 
+function getDeviceName() {
+  const userAgentData = (
+    navigator as Navigator & {
+      userAgentData?: { platform?: string; brands?: { brand: string }[] };
+    }
+  ).userAgentData;
+
+  if (userAgentData?.platform) {
+    const browser = userAgentData.brands?.[0]?.brand;
+    return browser ? `${userAgentData.platform} / ${browser}` : userAgentData.platform;
+  }
+
+  const userAgent = navigator.userAgent;
+  if (/iPhone/i.test(userAgent)) return "iPhone";
+  if (/iPad/i.test(userAgent)) return "iPad";
+  if (/Android/i.test(userAgent)) return "Android";
+  if (/Windows/i.test(userAgent)) return "Windows";
+  if (/Macintosh|Mac OS/i.test(userAgent)) return "Mac";
+  return "Bilinmeyen cihaz";
+}
+
 function ScanContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -46,13 +67,14 @@ function ScanContent() {
           "/attendance/scan",
           {
             method: "POST",
-            headers: jsonAuthHeaders(),
-            body: JSON.stringify({
-              token,
-              device_id: deviceId,
-            }),
-          }
-        );
+          headers: jsonAuthHeaders(),
+          body: JSON.stringify({
+            token,
+            device_id: deviceId,
+            device_name: getDeviceName(),
+          }),
+        }
+      );
 
         const data = await response.json();
 

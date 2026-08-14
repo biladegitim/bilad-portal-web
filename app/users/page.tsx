@@ -19,6 +19,7 @@ type UserItem = {
   work_end_time: string | null;
   annual_leave_days: number;
   device_id?: string | null;
+  device_name?: string | null;
 };
 
 const permissionOptions = [
@@ -266,7 +267,10 @@ export default function UsersPage() {
     return "bg-slate-100 text-slate-700";
   }
 
-  function deviceLabel(deviceId: string | null | undefined) {
+  function deviceLabel(user: UserItem) {
+    const deviceId = user.device_id;
+    const deviceName = user.device_name?.trim();
+    if (deviceName) return deviceName;
     if (deviceId === undefined) return "Bilgi alınamadı";
     if (!deviceId) return "Tanımlı değil";
     if (deviceId.length <= 14) return deviceId;
@@ -579,12 +583,12 @@ export default function UsersPage() {
 
                             <td className="p-4">
                               <span
-                                title={deviceLabel(user.device_id)}
+                                title={user.device_id || deviceLabel(user)}
                                 className={`rounded-full px-3 py-1 text-xs font-semibold ${deviceClass(
                                   user.device_id
                                 )}`}
                               >
-                                {deviceLabel(user.device_id)}
+                                {deviceLabel(user)}
                               </span>
                             </td>
 
@@ -664,7 +668,7 @@ export default function UsersPage() {
                             / {user.work_end_time?.slice(0, 5) || "-"}
                           </p>
                           <p>Yıllık izin: {user.annual_leave_days || 0} gün</p>
-                          <p>Cihaz: {deviceLabel(user.device_id)}</p>
+                          <p>Cihaz: {deviceLabel(user)}</p>
                         </div>
 
                         <div className="mt-4 grid grid-cols-2 gap-3">
