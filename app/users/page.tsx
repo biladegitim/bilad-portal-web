@@ -359,9 +359,15 @@ export default function UsersPage() {
                     setShowCreateForm(false);
                     resetEdit();
                   }}
-                  className="h-11 rounded-2xl border border-[#E6EEF9] bg-white px-5 text-sm font-semibold text-slate-600 shadow-sm transition hover:bg-slate-50"
+                  title="Cihaz çakışmaları"
+                  aria-label="Cihaz çakışmaları"
+                  className={`flex h-11 w-11 items-center justify-center rounded-2xl border text-lg font-black shadow-sm transition ${
+                    showDeviceConflicts
+                      ? "border-red-100 bg-red-50 text-red-600 hover:bg-red-100"
+                      : "border-[#E6EEF9] bg-white text-slate-500 hover:bg-slate-50"
+                  }`}
                 >
-                  {showDeviceConflicts ? "Çakışmaları Kapat" : "Cihaz Çakışmaları"}
+                  !
                 </button>
               </div>
             </div>
