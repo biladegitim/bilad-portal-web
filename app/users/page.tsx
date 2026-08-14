@@ -18,6 +18,7 @@ type UserItem = {
   work_start_time: string | null;
   work_end_time: string | null;
   annual_leave_days: number;
+  device_id: string | null;
 };
 
 const permissionOptions = [
@@ -263,6 +264,12 @@ export default function UsersPage() {
     if (role === "admin") return "bg-indigo-50 text-indigo-700";
     if (role === "qr") return "bg-amber-50 text-amber-700";
     return "bg-slate-100 text-slate-700";
+  }
+
+  function deviceLabel(deviceId: string | null) {
+    if (!deviceId) return "Tanımlı değil";
+    if (deviceId.length <= 14) return deviceId;
+    return `${deviceId.slice(0, 8)}...${deviceId.slice(-4)}`;
   }
 
   if (loading) {
@@ -520,6 +527,7 @@ export default function UsersPage() {
                           <th className="p-4 font-semibold">Rol</th>
                           <th className="p-4 font-semibold">Mesai</th>
                           <th className="p-4 font-semibold">Yıllık İzin</th>
+                          <th className="p-4 font-semibold">Cihaz</th>
                           <th className="p-4 font-semibold">Durum</th>
                           <th className="p-4 font-semibold">İşlem</th>
                         </tr>
@@ -560,6 +568,19 @@ export default function UsersPage() {
 
                             <td className="p-4 text-slate-600">
                               {user.annual_leave_days || 0} gün
+                            </td>
+
+                            <td className="p-4">
+                              <span
+                                title={user.device_id || "Tanımlı değil"}
+                                className={`rounded-full px-3 py-1 text-xs font-semibold ${
+                                  user.device_id
+                                    ? "bg-emerald-50 text-emerald-700"
+                                    : "bg-slate-100 text-slate-500"
+                                }`}
+                              >
+                                {deviceLabel(user.device_id)}
+                              </span>
                             </td>
 
                             <td className="p-4">
@@ -638,6 +659,7 @@ export default function UsersPage() {
                             / {user.work_end_time?.slice(0, 5) || "-"}
                           </p>
                           <p>Yıllık izin: {user.annual_leave_days || 0} gün</p>
+                          <p>Cihaz: {deviceLabel(user.device_id)}</p>
                         </div>
 
                         <div className="mt-4 grid grid-cols-2 gap-3">
