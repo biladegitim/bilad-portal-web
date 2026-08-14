@@ -22,6 +22,17 @@ type UserItem = {
   device_name?: string | null;
 };
 
+type DeviceConflict = {
+  id: number;
+  attempted_user_name: string;
+  matched_user_name: string | null;
+  attempted_device_name: string | null;
+  expected_device_name: string | null;
+  attempted_device_id: string;
+  expected_device_id: string | null;
+  created_at: string;
+};
+
 const permissionOptions = [
   { code: "room.approve", label: "Mekan Onaylama" },
   { code: "menu.manage", label: "Menü Yönetimi" },
@@ -33,9 +44,11 @@ export default function UsersPage() {
   const router = useRouter();
 
   const [users, setUsers] = useState<UserItem[]>([]);
+  const [deviceConflicts, setDeviceConflicts] = useState<DeviceConflict[]>([]);
   const [loading, setLoading] = useState(true);
 
   const [showCreateForm, setShowCreateForm] = useState(false);
+  const [showDeviceConflicts, setShowDeviceConflicts] = useState(false);
   const [editingUser, setEditingUser] = useState<UserItem | null>(null);
 
   const [fullName, setFullName] = useState("");
@@ -63,6 +76,15 @@ export default function UsersPage() {
 
       const data = await response.json();
       setUsers(data.users || []);
+
+      const conflictResponse = await apiFetch("/users/device-conflicts", {
+        headers: authHeaders(),
+      });
+
+      if (conflictResponse.ok) {
+        const conflictData = await conflictResponse.json();
+        setDeviceConflicts(conflictData.conflicts || []);
+      }
     } catch {
       setUsers([]);
     } finally {
@@ -108,6 +130,7 @@ export default function UsersPage() {
 
   async function startEdit(user: UserItem) {
     setEditingUser(user);
+    setShowDeviceConflicts(false);
     setEditRole(user.role || "employee");
     setEditPosition(user.position || "");
     setEditSupervisorId(user.supervisor_id ? String(user.supervisor_id) : "");
@@ -283,6 +306,16 @@ export default function UsersPage() {
     return "bg-slate-100 text-slate-500";
   }
 
+  function formatDateTime(value: string) {
+    return new Date(value).toLocaleString("tr-TR", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  }
+
   if (loading) {
     return (
       <div className="flex min-h-screen bg-[#F6F9FF]">
@@ -311,11 +344,24 @@ export default function UsersPage() {
                   type="button"
                   onClick={() => {
                     setShowCreateForm(!showCreateForm);
+                    setShowDeviceConflicts(false);
                     resetEdit();
                   }}
                   className="h-11 rounded-2xl bg-sky-600 px-5 text-sm font-semibold text-white shadow-sm transition hover:bg-sky-700"
                 >
                   {showCreateForm ? "Formu Kapat" : "+ Kullanıcı Ekle"}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowDeviceConflicts(!showDeviceConflicts);
+                    setShowCreateForm(false);
+                    resetEdit();
+                  }}
+                  className="h-11 rounded-2xl border border-[#E6EEF9] bg-white px-5 text-sm font-semibold text-slate-600 shadow-sm transition hover:bg-slate-50"
+                >
+                  {showDeviceConflicts ? "Çakışmaları Kapat" : "Cihaz Çakışmaları"}
                 </button>
               </div>
             </div>
@@ -497,6 +543,76 @@ export default function UsersPage() {
                     </button>
                   </div>
                 </form>
+              </section>
+            )}
+
+            {showDeviceConflicts && !editingUser && !showCreateForm && (
+              <section className="rounded-2xl border border-[#E6EEF9] bg-white p-4 shadow-sm md:rounded-3xl md:p-5">
+                <div className="mb-4 flex items-center justify-between gap-3">
+                  <SectionTitle
+                    icon="📱"
+                    title="Cihaz Çakışmaları"
+                    description="Farklı cihazdan QR okutma denemeleri."
+                  />
+
+                  <span className="rounded-full bg-red-50 px-3 py-1.5 text-xs font-semibold text-red-600 md:text-sm">
+                    {deviceConflicts.length} kayıt
+                  </span>
+                </div>
+
+                {deviceConflicts.length === 0 ? (
+                  <div className="rounded-2xl bg-[#F8FBFF] p-5 text-center text-sm text-slate-500">
+                    Henüz cihaz çakışması kaydı yok.
+                  </div>
+                ) : (
+                  <div className="grid gap-3">
+                    {deviceConflicts.map((conflict) => (
+                      <article
+                        key={conflict.id}
+                        className="rounded-2xl border border-red-100 bg-red-50/60 p-4"
+                      >
+                        <div className="flex flex-col gap-2 md:flex-row md:items-start md:justify-between">
+                          <div>
+                            <p className="text-sm font-bold text-slate-800">
+                              {conflict.attempted_user_name}
+                            </p>
+
+                            <p className="mt-1 text-sm text-slate-600">
+                              Bu hesaba farklı cihazdan QR okutma denemesi yapıldı.
+                            </p>
+                          </div>
+
+                          <span className="w-fit rounded-full bg-white px-3 py-1 text-xs font-semibold text-slate-500">
+                            {formatDateTime(conflict.created_at)}
+                          </span>
+                        </div>
+
+                        <div className="mt-3 grid gap-2 text-sm text-slate-600 md:grid-cols-2">
+                          <p>
+                            <span className="font-semibold text-slate-700">
+                              Denenen cihaz:
+                            </span>{" "}
+                            {conflict.attempted_device_name || "Bilinmeyen cihaz"}
+                          </p>
+
+                          <p>
+                            <span className="font-semibold text-slate-700">
+                              Bu cihaz kime ait:
+                            </span>{" "}
+                            {conflict.matched_user_name || "Başka kullanıcıda kayıtlı değil"}
+                          </p>
+
+                          <p>
+                            <span className="font-semibold text-slate-700">
+                              Hesabın kayıtlı cihazı:
+                            </span>{" "}
+                            {conflict.expected_device_name || "Cihaz adı yok"}
+                          </p>
+                        </div>
+                      </article>
+                    ))}
+                  </div>
+                )}
               </section>
             )}
 
