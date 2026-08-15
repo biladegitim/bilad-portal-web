@@ -62,6 +62,7 @@ export default function UsersPage() {
   const [editWorkEnd, setEditWorkEnd] = useState("");
   const [editAnnualLeaveDays, setEditAnnualLeaveDays] = useState("");
   const [selectedPermissions, setSelectedPermissions] = useState<string[]>([]);
+  const [resetDeviceUserId, setResetDeviceUserId] = useState("");
 
   const fetchUsers = useCallback(async () => {
     try {
@@ -315,6 +316,42 @@ export default function UsersPage() {
       return;
     }
 
+    alert("Cihaz eşleşmesi sıfırlandı. Kullanıcı kendi telefonundan QR okutunca yeniden tanımlanacak.");
+    fetchUsers();
+  }
+
+  async function handleResetSelectedDeviceBinding() {
+    if (!resetDeviceUserId) {
+      alert("Önce kullanıcı seçin.");
+      return;
+    }
+
+    const selectedUser = users.find(
+      (user) => user.id === Number(resetDeviceUserId)
+    );
+
+    if (
+      !confirm(
+        `${selectedUser?.full_name || "Seçilen kullanıcı"} için cihaz eşleşmesi sıfırlansın mı?`
+      )
+    ) {
+      return;
+    }
+
+    const response = await apiFetch(
+      `/users/${resetDeviceUserId}/device-binding`,
+      {
+        method: "DELETE",
+        headers: authHeaders(),
+      }
+    );
+
+    if (!response.ok) {
+      alert("Cihaz eşleşmesi sıfırlanamadı.");
+      return;
+    }
+
+    setResetDeviceUserId("");
     alert("Cihaz eşleşmesi sıfırlandı. Kullanıcı kendi telefonundan QR okutunca yeniden tanımlanacak.");
     fetchUsers();
   }
@@ -599,6 +636,37 @@ export default function UsersPage() {
                       className="h-9 rounded-xl border border-[#E6EEF9] bg-white px-3 text-xs font-semibold text-slate-600 transition hover:bg-slate-50"
                     >
                       Kapat
+                    </button>
+                  </div>
+                </div>
+
+                <div className="mb-4 rounded-2xl border border-red-100 bg-red-50/60 p-4">
+                  <p className="mb-3 text-sm font-semibold text-slate-700">
+                    Cihaz eşleşmesini manuel sıfırla
+                  </p>
+
+                  <div className="grid gap-3 md:grid-cols-[1fr_auto]">
+                    <select
+                      value={resetDeviceUserId}
+                      onChange={(event) =>
+                        setResetDeviceUserId(event.target.value)
+                      }
+                      className="h-11 rounded-2xl border border-[#E6EEF9] bg-white px-4 text-sm text-slate-700 outline-none transition focus:border-sky-400 focus:ring-4 focus:ring-sky-100"
+                    >
+                      <option value="">Kullanıcı seçin</option>
+                      {users.map((user) => (
+                        <option key={user.id} value={user.id}>
+                          {user.full_name}
+                        </option>
+                      ))}
+                    </select>
+
+                    <button
+                      type="button"
+                      onClick={handleResetSelectedDeviceBinding}
+                      className="h-11 rounded-2xl bg-red-600 px-5 text-sm font-semibold text-white shadow-sm transition hover:bg-red-700"
+                    >
+                      Cihaz Eşleşmesini Sıfırla
                     </button>
                   </div>
                 </div>
