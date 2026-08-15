@@ -573,9 +573,19 @@ export default function UsersPage() {
                     description="Farklı cihazdan QR okutma denemeleri."
                   />
 
-                  <span className="rounded-full bg-red-50 px-3 py-1.5 text-xs font-semibold text-red-600 md:text-sm">
-                    {deviceConflicts.length} kayıt
-                  </span>
+                  <div className="flex items-center gap-2">
+                    <span className="rounded-full bg-red-50 px-3 py-1.5 text-xs font-semibold text-red-600 md:text-sm">
+                      {deviceConflicts.length} kayıt
+                    </span>
+
+                    <button
+                      type="button"
+                      onClick={() => setShowDeviceConflicts(false)}
+                      className="h-9 rounded-xl border border-[#E6EEF9] bg-white px-3 text-xs font-semibold text-slate-600 transition hover:bg-slate-50"
+                    >
+                      Kapat
+                    </button>
+                  </div>
                 </div>
 
                 {deviceConflicts.length === 0 ? (
@@ -644,7 +654,7 @@ export default function UsersPage() {
               </section>
             )}
 
-            {!editingUser && !showCreateForm && (
+            {!editingUser && !showCreateForm && !showDeviceConflicts && (
               <section className="rounded-2xl border border-[#E6EEF9] bg-white p-4 shadow-sm md:rounded-3xl md:p-5">
               <div className="mb-4 flex items-center justify-between gap-3">
                 <SectionTitle
