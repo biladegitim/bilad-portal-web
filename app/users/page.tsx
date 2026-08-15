@@ -276,8 +276,23 @@ export default function UsersPage() {
     fetchUsers();
   }
 
+  function getConflictUserId(conflict: DeviceConflict) {
+    if (conflict.attempted_user_id) return conflict.attempted_user_id;
+
+    return users.find(
+      (user) =>
+        user.full_name.trim().toLocaleLowerCase("tr-TR") ===
+        conflict.attempted_user_name.trim().toLocaleLowerCase("tr-TR")
+    )?.id;
+  }
+
   async function handleResetDeviceBinding(conflict: DeviceConflict) {
-    if (!conflict.attempted_user_id) return;
+    const userId = getConflictUserId(conflict);
+
+    if (!userId) {
+      alert("Bu kayıt için kullanıcı bulunamadı.");
+      return;
+    }
 
     if (
       !confirm(
@@ -288,7 +303,7 @@ export default function UsersPage() {
     }
 
     const response = await apiFetch(
-      `/users/${conflict.attempted_user_id}/device-binding`,
+      `/users/${userId}/device-binding`,
       {
         method: "DELETE",
         headers: authHeaders(),
@@ -638,7 +653,7 @@ export default function UsersPage() {
                           </p>
                         </div>
 
-                        {conflict.attempted_user_id && (
+                        {getConflictUserId(conflict) && (
                           <button
                             type="button"
                             onClick={() => handleResetDeviceBinding(conflict)}
