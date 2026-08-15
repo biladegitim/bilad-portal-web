@@ -22,6 +22,8 @@ type UserItem = {
 
 type DeviceConflict = {
   id: number;
+  attempted_user_id: number | null;
+  matched_user_id: number | null;
   attempted_user_name: string;
   matched_user_name: string | null;
   attempted_device_name: string | null;
@@ -271,6 +273,34 @@ export default function UsersPage() {
       return;
     }
 
+    fetchUsers();
+  }
+
+  async function handleResetDeviceBinding(conflict: DeviceConflict) {
+    if (!conflict.attempted_user_id) return;
+
+    if (
+      !confirm(
+        `${conflict.attempted_user_name} için cihaz eşleşmesi sıfırlansın mı?`
+      )
+    ) {
+      return;
+    }
+
+    const response = await apiFetch(
+      `/users/${conflict.attempted_user_id}/device-binding`,
+      {
+        method: "DELETE",
+        headers: authHeaders(),
+      }
+    );
+
+    if (!response.ok) {
+      alert("Cihaz eşleşmesi sıfırlanamadı.");
+      return;
+    }
+
+    alert("Cihaz eşleşmesi sıfırlandı. Kullanıcı kendi telefonundan QR okutunca yeniden tanımlanacak.");
     fetchUsers();
   }
 
@@ -597,6 +627,16 @@ export default function UsersPage() {
                             {conflict.expected_device_name || "Cihaz adı yok"}
                           </p>
                         </div>
+
+                        {conflict.attempted_user_id && (
+                          <button
+                            type="button"
+                            onClick={() => handleResetDeviceBinding(conflict)}
+                            className="mt-4 h-10 rounded-2xl bg-white px-4 text-sm font-semibold text-red-600 shadow-sm transition hover:bg-red-100"
+                          >
+                            Cihaz Eşleşmesini Sıfırla
+                          </button>
+                        )}
                       </article>
                     ))}
                   </div>
