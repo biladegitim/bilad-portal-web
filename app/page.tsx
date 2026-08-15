@@ -7,7 +7,7 @@ import { QRCodeSVG } from "qrcode.react";
 import Sidebar from "@/components/Sidebar";
 import SplashScreen from "@/components/SplashScreen";
 import { apiFetch, apiUrl } from "@/lib/api";
-import { authHeaders, getAccessToken } from "@/lib/auth";
+import { authHeaders, clearAuthSession, getAccessToken } from "@/lib/auth";
 import { formatLocalDate, formatLocalDateShort, formatLocalTime } from "@/lib/dateTime";
 import { sortFloors } from "@/lib/floors";
 
@@ -346,7 +346,7 @@ export default function Home() {
   }
 
   function logout() {
-    localStorage.clear();
+    clearAuthSession();
     router.push("/login");
   }
 

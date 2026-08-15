@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import Sidebar from "@/components/Sidebar";
 
 import { apiFetch, apiUrl } from "@/lib/api";
-import { authHeaders, getAccessToken, jsonAuthHeaders } from "@/lib/auth";
+import { authHeaders, clearAuthSession, getAccessToken, jsonAuthHeaders } from "@/lib/auth";
 
 type ProfileData = {
   full_name: string;
@@ -144,7 +144,7 @@ export default function ProfilePage() {
   }
 
   function logout() {
-    localStorage.clear();
+    clearAuthSession();
     router.push("/login");
   }
 

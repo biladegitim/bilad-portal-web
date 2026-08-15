@@ -6,6 +6,7 @@ import { useState } from "react";
 
 import { useLeaveNotifications } from "@/hooks/useLeaveNotifications";
 import { useProfileAccess } from "@/hooks/useProfileAccess";
+import { clearAuthSession } from "@/lib/auth";
 
 const menuItems = [
   { title: "Ana Sayfa", href: "/", icon: "🏠" },
@@ -31,7 +32,7 @@ export default function Sidebar() {
   const isAdmin = role === "admin" || role === "super_admin";
 
   function handleLogout() {
-    localStorage.clear();
+    clearAuthSession();
     window.location.href = "/login";
   }
 
