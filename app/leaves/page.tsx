@@ -29,6 +29,8 @@ type AnnualLeaveBalance = {
   year: number;
   total_days: number;
   used_days: number;
+  automatic_used_days?: number;
+  manual_adjustment_days?: number;
   pending_days: number;
   remaining_days: number;
   available_days: number;
@@ -128,6 +130,7 @@ export default function LeavesPage() {
   const [reason, setReason] = useState("");
   const [leaveType, setLeaveType] = useState("");
   const [activePanel, setActivePanel] = useState<LeavePanel | null>(null);
+  const [annualUsedDrafts, setAnnualUsedDrafts] = useState<Record<number, string>>({});
   const isExcuseLeave = leaveType === "excuse";
   const activeTeamLeaves = teamLeaves.filter((leave) => !isArchivedLeave(leave));
   const archivedTeamLeaves = teamLeaves.filter(isArchivedLeave);
@@ -170,7 +173,16 @@ export default function LeavesPage() {
 
       if (balanceResponse.ok) {
         const balanceData = await balanceResponse.json();
-        setAnnualLeaveBalances(balanceData.balances || []);
+        const balances = balanceData.balances || [];
+        setAnnualLeaveBalances(balances);
+        setAnnualUsedDrafts(
+          Object.fromEntries(
+            balances.map((balance: AnnualLeaveBalance) => [
+              balance.user_id,
+              String(balance.used_days ?? 0),
+            ])
+          )
+        );
         setCanViewAnnualLeaveBalances(true);
       } else {
         setAnnualLeaveBalances([]);
@@ -355,6 +367,34 @@ export default function LeavesPage() {
 
     if (!response.ok) {
       alert("İzin talebi silinemedi");
+      return;
+    }
+
+    fetchLeaves();
+  }
+
+  async function updateAnnualUsedDays(balance: AnnualLeaveBalance) {
+    const usedDays = Number(annualUsedDrafts[balance.user_id] ?? balance.used_days);
+
+    if (!Number.isInteger(usedDays) || usedDays < 0) {
+      alert("Kullanılan gün sıfır veya pozitif tam sayı olmalıdır.");
+      return;
+    }
+
+    const response = await apiFetch(
+      `/annual-leave-balances/${balance.user_id}/used-days`,
+      {
+        method: "PATCH",
+        headers: jsonAuthHeaders(),
+        body: JSON.stringify({
+          year: balance.year,
+          used_days: usedDays,
+        }),
+      }
+    );
+
+    if (!response.ok) {
+      alert("Kullanılan gün güncellenemedi.");
       return;
     }
 
@@ -604,11 +644,39 @@ export default function LeavesPage() {
                       <div className="mt-3 grid grid-cols-2 gap-2 text-xs text-slate-500 md:text-sm">
                         <span>Toplam: {balance.total_days} gün</span>
                         <span>Kalan: {balance.remaining_days} gün</span>
-                        <span>Kullanılan: {balance.used_days} gün</span>
                         <span>Bekleyen: {balance.pending_days} gün</span>
                         <span className="font-semibold text-sky-700">
                           Kullanılabilir: {balance.available_days} gün
                         </span>
+                      </div>
+
+                      <div className="mt-4 rounded-2xl bg-white p-3">
+                        <label className="mb-1.5 block text-xs font-semibold text-slate-500">
+                          Kullanılan gün
+                        </label>
+
+                        <div className="flex gap-2">
+                          <input
+                            type="number"
+                            min={0}
+                            value={annualUsedDrafts[balance.user_id] ?? ""}
+                            onChange={(event) =>
+                              setAnnualUsedDrafts((current) => ({
+                                ...current,
+                                [balance.user_id]: event.target.value,
+                              }))
+                            }
+                            className="h-10 min-w-0 flex-1 rounded-2xl border border-[#E6EEF9] bg-[#F8FBFF] px-3 text-sm text-slate-700 outline-none transition focus:border-sky-400 focus:bg-white focus:ring-4 focus:ring-sky-100"
+                          />
+
+                          <button
+                            type="button"
+                            onClick={() => updateAnnualUsedDays(balance)}
+                            className="h-10 rounded-2xl bg-sky-600 px-4 text-sm font-semibold text-white transition hover:bg-sky-700"
+                          >
+                            Kaydet
+                          </button>
+                        </div>
                       </div>
                     </div>
                   ))}
