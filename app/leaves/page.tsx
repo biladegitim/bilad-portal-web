@@ -650,34 +650,40 @@ export default function LeavesPage() {
                         </span>
                       </div>
 
-                      <div className="mt-4 rounded-2xl bg-white p-3">
-                        <label className="mb-1.5 block text-xs font-semibold text-slate-500">
-                          Kullanılan gün
-                        </label>
+                      {isSuperAdmin ? (
+                        <div className="mt-4 rounded-2xl bg-white p-3">
+                          <label className="mb-1.5 block text-xs font-semibold text-slate-500">
+                            Kullanılan gün
+                          </label>
 
-                        <div className="flex gap-2">
-                          <input
-                            type="number"
-                            min={0}
-                            value={annualUsedDrafts[balance.user_id] ?? ""}
-                            onChange={(event) =>
-                              setAnnualUsedDrafts((current) => ({
-                                ...current,
-                                [balance.user_id]: event.target.value,
-                              }))
-                            }
-                            className="h-10 min-w-0 flex-1 rounded-2xl border border-[#E6EEF9] bg-[#F8FBFF] px-3 text-sm text-slate-700 outline-none transition focus:border-sky-400 focus:bg-white focus:ring-4 focus:ring-sky-100"
-                          />
+                          <div className="flex gap-2">
+                            <input
+                              type="number"
+                              min={0}
+                              value={annualUsedDrafts[balance.user_id] ?? ""}
+                              onChange={(event) =>
+                                setAnnualUsedDrafts((current) => ({
+                                  ...current,
+                                  [balance.user_id]: event.target.value,
+                                }))
+                              }
+                              className="h-10 min-w-0 flex-1 rounded-2xl border border-[#E6EEF9] bg-[#F8FBFF] px-3 text-sm text-slate-700 outline-none transition focus:border-sky-400 focus:bg-white focus:ring-4 focus:ring-sky-100"
+                            />
 
-                          <button
-                            type="button"
-                            onClick={() => updateAnnualUsedDays(balance)}
-                            className="h-10 rounded-2xl bg-sky-600 px-4 text-sm font-semibold text-white transition hover:bg-sky-700"
-                          >
-                            Kaydet
-                          </button>
+                            <button
+                              type="button"
+                              onClick={() => updateAnnualUsedDays(balance)}
+                              className="h-10 rounded-2xl bg-sky-600 px-4 text-sm font-semibold text-white transition hover:bg-sky-700"
+                            >
+                              Kaydet
+                            </button>
+                          </div>
                         </div>
-                      </div>
+                      ) : (
+                        <p className="mt-4 rounded-2xl bg-white p-3 text-sm text-slate-500">
+                          Kullanılan: {balance.used_days} gün
+                        </p>
+                      )}
                     </div>
                   ))}
                 </div>
