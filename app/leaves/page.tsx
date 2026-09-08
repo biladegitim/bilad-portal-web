@@ -19,6 +19,7 @@ type LeaveItem = {
   end_time: string;
   reason: string | null;
   leave_type: string;
+  leave_period?: string | null;
   day_count: number;
   status: string;
 };
@@ -61,6 +62,19 @@ function getLeaveTypeLabel(leaveType: string) {
   if (leaveType === "excuse" || leaveType === "standard") return "Mazeret izni";
 
   return "İzin";
+}
+
+function getLeavePeriodLabel(leavePeriod?: string | null) {
+  if (leavePeriod === "morning") return "Ö.Ö";
+  if (leavePeriod === "afternoon") return "Ö.S";
+
+  return "";
+}
+
+function formatLeaveDayCount(dayCount?: number) {
+  if (!dayCount) return "";
+
+  return `${String(dayCount).replace(".", ",")} gün`;
 }
 
 function shouldShowLeaveTime(leaveType: string) {
@@ -129,9 +143,12 @@ export default function LeavesPage() {
   const [endTime, setEndTime] = useState("");
   const [reason, setReason] = useState("");
   const [leaveType, setLeaveType] = useState("");
+  const [weeklyLeavePeriod, setWeeklyLeavePeriod] = useState<"full_day" | "morning" | "afternoon">("full_day");
   const [activePanel, setActivePanel] = useState<LeavePanel | null>(null);
   const [annualUsedDrafts, setAnnualUsedDrafts] = useState<Record<number, string>>({});
   const isExcuseLeave = leaveType === "excuse";
+  const isWeeklyLeave = leaveType === "weekly";
+  const isWeeklyHalfDay = isWeeklyLeave && weeklyLeavePeriod !== "full_day";
   const activeTeamLeaves = teamLeaves.filter((leave) => !isArchivedLeave(leave));
   const archivedTeamLeaves = teamLeaves.filter(isArchivedLeave);
 
@@ -262,7 +279,9 @@ export default function LeavesPage() {
 
     const myBalance = myAnnualLeaveBalance;
     const requestStartTime = isExcuseLeave ? startTime : `${startTime}T00:00`;
-    const requestEndTime = isExcuseLeave ? endTime : `${endTime}T23:59`;
+    const requestEndTime = isExcuseLeave
+      ? endTime
+      : `${isWeeklyHalfDay ? startTime : endTime}T23:59`;
 
     if (
       leaveType === "weekly" &&
@@ -280,7 +299,9 @@ export default function LeavesPage() {
         return;
       }
 
-      const requestedDays = calculateLeaveDays(requestStartTime, requestEndTime);
+      const requestedDays = isWeeklyHalfDay
+        ? 0.5
+        : calculateLeaveDays(requestStartTime, requestEndTime);
 
       if (requestedDays > myWeeklyLeaveBalance.available_days) {
         alert(
@@ -321,6 +342,7 @@ export default function LeavesPage() {
         end_time: requestEndTime,
         reason: isExcuseLeave ? reason : null,
         leave_type: leaveType,
+        leave_period: isWeeklyLeave ? weeklyLeavePeriod : null,
       }),
     });
 
@@ -334,6 +356,7 @@ export default function LeavesPage() {
     setEndTime("");
     setReason("");
     setLeaveType("");
+    setWeeklyLeavePeriod("full_day");
     fetchLeaves();
   }
 
@@ -452,20 +475,28 @@ export default function LeavesPage() {
 
                 <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
                   <DateInput
-                    label={isExcuseLeave ? "Başlangıç" : "Başlangıç Tarihi"}
+                    label={
+                      isExcuseLeave
+                        ? "Başlangıç"
+                        : isWeeklyHalfDay
+                          ? "İzin Tarihi"
+                          : "Başlangıç Tarihi"
+                    }
                     value={startTime}
                     setValue={setStartTime}
                     type={isExcuseLeave ? "datetime-local" : "date"}
                     required
                   />
 
-                  <DateInput
-                    label={isExcuseLeave ? "Bitiş" : "Bitiş Tarihi"}
-                    value={endTime}
-                    setValue={setEndTime}
-                    type={isExcuseLeave ? "datetime-local" : "date"}
-                    required
-                  />
+                  {!isWeeklyHalfDay && (
+                    <DateInput
+                      label={isExcuseLeave ? "Bitiş" : "Bitiş Tarihi"}
+                      value={endTime}
+                      setValue={setEndTime}
+                      type={isExcuseLeave ? "datetime-local" : "date"}
+                      required
+                    />
+                  )}
 
                   <div className="lg:col-span-2">
                     <div className="grid grid-cols-2 gap-x-5 gap-y-3">
@@ -481,9 +512,13 @@ export default function LeavesPage() {
                             type="button"
                             disabled={weeklyLimitReached}
                             onClick={() => {
-                              setLeaveType((current) =>
-                                current === option.value ? "" : option.value
-                              );
+                              setLeaveType((current) => {
+                                const nextValue =
+                                  current === option.value ? "" : option.value;
+                                setWeeklyLeavePeriod("full_day");
+
+                                return nextValue;
+                              });
                               setStartTime("");
                               setEndTime("");
                             }}
@@ -507,6 +542,52 @@ export default function LeavesPage() {
                         );
                       })}
                     </div>
+
+                    {isWeeklyLeave && (
+                      <div className="mt-4 rounded-2xl bg-[#F8FBFF] p-3">
+                        <p className="mb-2 text-xs font-semibold text-slate-500 md:text-sm">
+                          Haftalık izin süresi
+                        </p>
+
+                        <div className="grid grid-cols-3 gap-2">
+                          {[
+                            { value: "full_day", label: "Tam gün" },
+                            { value: "morning", label: "Ö.Ö" },
+                            { value: "afternoon", label: "Ö.S" },
+                          ].map((option) => {
+                            const active = weeklyLeavePeriod === option.value;
+
+                            return (
+                              <button
+                                key={option.value}
+                                type="button"
+                                onClick={() => {
+                                  setWeeklyLeavePeriod(
+                                    option.value as "full_day" | "morning" | "afternoon"
+                                  );
+                                  setEndTime("");
+                                }}
+                                className={`h-10 rounded-2xl border text-sm font-semibold transition ${
+                                  active
+                                    ? "border-sky-300 bg-white text-sky-700 shadow-sm"
+                                    : "border-[#E6EEF9] bg-white text-slate-600 hover:bg-sky-50"
+                                }`}
+                              >
+                                {option.label}
+                              </button>
+                            );
+                          })}
+                        </div>
+
+                        {isWeeklyHalfDay && (
+                          <p className="mt-2 text-xs text-slate-400 md:text-sm">
+                            {weeklyLeavePeriod === "morning"
+                              ? "Ö.Ö: 09:00 - 13:30"
+                              : "Ö.S: 13:30 - 18:00"}
+                          </p>
+                        )}
+                      </div>
+                    )}
 
                     {myAnnualLeaveBalance && (
                       <p className="mt-2 text-xs text-slate-500 md:text-sm">
@@ -910,7 +991,10 @@ function LeaveCard({
           </p>
           <p className="mt-1 text-xs font-semibold text-sky-600 md:text-sm">
             {getLeaveTypeLabel(leave.leave_type)}
-            {leave.day_count ? ` - ${leave.day_count} gün` : ""}
+            {getLeavePeriodLabel(leave.leave_period) &&
+              ` ${getLeavePeriodLabel(leave.leave_period)}`}
+            {formatLeaveDayCount(leave.day_count) &&
+              ` - ${formatLeaveDayCount(leave.day_count)}`}
           </p>
         </div>
 

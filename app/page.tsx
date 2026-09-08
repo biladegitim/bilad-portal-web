@@ -30,6 +30,7 @@ type HomeData = {
     end_time: string;
     reason: string | null;
     leave_type?: string | null;
+    leave_period?: string | null;
   }[];
 };
 
@@ -176,9 +177,18 @@ function getReservationCardClasses(status: UsageStatus) {
   return "border-[#E6EEF9] bg-white";
 }
 
-function getLeaveTypeLabel(leaveType?: string | null) {
+function getLeavePeriodLabel(leavePeriod?: string | null) {
+  if (leavePeriod === "morning") return "Ö.Ö";
+  if (leavePeriod === "afternoon") return "Ö.S";
+
+  return "";
+}
+
+function getLeaveTypeLabel(leaveType?: string | null, leavePeriod?: string | null) {
+  const periodLabel = getLeavePeriodLabel(leavePeriod);
+
   if (leaveType === "annual") return "Yıllık";
-  if (leaveType === "weekly") return "Haftalık";
+  if (leaveType === "weekly") return periodLabel ? `Haftalık ${periodLabel}` : "Haftalık";
   if (leaveType === "report") return "Rapor";
   if (leaveType === "excuse" || leaveType === "standard") return "Mazeret";
 
@@ -534,7 +544,7 @@ export default function Home() {
                       </p>
 
                       <span className="absolute bottom-3 right-3 text-[11px] font-bold text-sky-700">
-                        {getLeaveTypeLabel(leave.leave_type)}
+                        {getLeaveTypeLabel(leave.leave_type, leave.leave_period)}
                       </span>
                     </div>
                   ))
