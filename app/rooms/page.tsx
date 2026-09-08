@@ -112,10 +112,11 @@ export default function RoomsPage() {
   const [rooms, setRooms] = useState<Room[]>([]);
   const [weeklySchedule, setWeeklySchedule] = useState<Record<string, Reservation[]>>({});
   const [pendingReservations, setPendingReservations] = useState<Reservation[]>([]);
+  const [archivedReservations, setArchivedReservations] = useState<Reservation[]>([]);
   const [loading, setLoading] = useState(true);
   const [isSuperAdmin, setIsSuperAdmin] = useState(false);
   const [canReviewRoomRequests, setCanReviewRoomRequests] = useState(false);
-  const [openPanel, setOpenPanel] = useState<"rooms" | "roomList" | "request" | "pending" | null>(null);
+  const [openPanel, setOpenPanel] = useState<"rooms" | "roomList" | "request" | "pending" | "archive" | null>(null);
 
   const [roomName, setRoomName] = useState("");
   const [roomDescription, setRoomDescription] = useState("");
@@ -218,6 +219,9 @@ export default function RoomsPage() {
         const pendingRes = await apiFetch("/room-reservations/pending", {
           headers: authHeaders(),
         });
+        const archiveRes = await apiFetch("/room-reservations/archive", {
+          headers: authHeaders(),
+        });
 
         if (pendingRes.ok) {
           const pendingData = await pendingRes.json();
@@ -225,13 +229,22 @@ export default function RoomsPage() {
         } else {
           setPendingReservations([]);
         }
+
+        if (archiveRes.ok) {
+          const archiveData = await archiveRes.json();
+          setArchivedReservations(archiveData.reservations || []);
+        } else {
+          setArchivedReservations([]);
+        }
       } else {
         setPendingReservations([]);
+        setArchivedReservations([]);
       }
     } catch {
       setRooms([]);
       setWeeklySchedule({});
       setPendingReservations([]);
+      setArchivedReservations([]);
     } finally {
       setLoading(false);
     }
@@ -934,6 +947,91 @@ export default function RoomsPage() {
                   </section>
                 )}
 
+                {canReviewRoomRequests && openPanel === "archive" && (
+                  <section className="rounded-2xl border border-[#E6EEF9] bg-white p-4 shadow-sm md:rounded-3xl md:p-5">
+                    <div className="mb-4 flex items-center justify-between gap-3">
+                      <SectionTitle
+                        icon="🗃️"
+                        title="Program Arşivi"
+                        description="Bitiş tarihi geçmiş mekan programları burada saklanır."
+                      />
+
+                      <div className="flex items-center gap-2">
+                        <span className="rounded-full bg-[#F8FBFF] px-3 py-1.5 text-xs font-semibold text-slate-500 md:text-sm">
+                          {archivedReservations.length} program
+                        </span>
+
+                        <button
+                          type="button"
+                          onClick={() => setOpenPanel(null)}
+                          className="rounded-2xl border border-[#E6EEF9] bg-white px-4 py-2 text-sm font-medium text-slate-600 transition hover:bg-slate-50"
+                        >
+                          Kapat
+                        </button>
+                      </div>
+                    </div>
+
+                    {archivedReservations.length === 0 ? (
+                      <div className="rounded-2xl bg-[#F8FBFF] p-4 text-sm text-slate-400 md:text-base">
+                        Arşivlenmiş program yok.
+                      </div>
+                    ) : (
+                      <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
+                        {archivedReservations.map((reservation) => (
+                          <article
+                            key={reservation.reservation_id}
+                            className="rounded-2xl border border-[#E6EEF9] bg-[#F8FBFF] p-4 transition hover:bg-white hover:shadow-sm"
+                          >
+                            <div className="mb-3 flex items-start justify-between gap-3">
+                              <div className="min-w-0">
+                                <p className="truncate text-sm font-semibold text-slate-800 md:text-base">
+                                  {reservation.room_name}
+                                </p>
+
+                                <p className="mt-0.5 truncate text-sm text-slate-600">
+                                  {reservation.title}
+                                </p>
+                              </div>
+
+                              <span className="shrink-0 rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">
+                                Arşiv
+                              </span>
+                            </div>
+
+                            <div className="rounded-2xl bg-white p-3 text-sm leading-6 text-slate-600">
+                              <p>Talep eden: {reservation.created_by_name || "Bilinmiyor"}</p>
+                              <p>Gün: {dayNames[reservation.weekday] || "-"}</p>
+                              <p>
+                                Saat: {reservation.start_time.slice(0, 5)} -{" "}
+                                {reservation.end_time.slice(0, 5)}
+                              </p>
+                              <p>
+                                Tarih: {formatDate(reservation.start_date)} →{" "}
+                                {formatDate(reservation.end_date)}
+                              </p>
+                              <p>Sıklık: {recurrenceLabel(reservation.recurrence_frequency)}</p>
+                            </div>
+
+                            {reservation.description && (
+                              <p className="mt-3 rounded-2xl bg-white p-3 text-sm leading-6 text-slate-500">
+                                {reservation.description}
+                              </p>
+                            )}
+
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteReservation(reservation)}
+                              className="mt-4 h-10 w-full rounded-2xl bg-red-50 text-sm font-semibold text-red-600 transition hover:bg-red-100"
+                            >
+                              Sil
+                            </button>
+                          </article>
+                        ))}
+                      </div>
+                    )}
+                  </section>
+                )}
+
                 {openPanel === null && (
                   <>
                   <section className="rounded-2xl border border-[#E6EEF9] bg-white p-4 shadow-sm md:rounded-3xl md:p-5">
@@ -1211,6 +1309,18 @@ export default function RoomsPage() {
                         countLabel="talep"
                         onClick={() =>
                           setOpenPanel(openPanel === "pending" ? null : "pending")
+                        }
+                      />
+                    )}
+
+                    {canReviewRoomRequests && (
+                      <HeaderActionButton
+                        active={openPanel === "archive"}
+                        label="Arşiv"
+                        count={archivedReservations.length}
+                        countLabel="program"
+                        onClick={() =>
+                          setOpenPanel(openPanel === "archive" ? null : "archive")
                         }
                       />
                     )}
