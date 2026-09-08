@@ -55,6 +55,16 @@ const dayNames = [
   "Pazar",
 ];
 
+const dayShortNames: Record<string, string> = {
+  Pazartesi: "Pzt",
+  Salı: "Sal",
+  Çarşamba: "Çar",
+  Perşembe: "Per",
+  Cuma: "Cum",
+  Cumartesi: "Cts",
+  Pazar: "Paz",
+};
+
 const FLOOR_STORAGE_KEY = "bilad-room-floors";
 const ROOM_FLOOR_STORAGE_KEY = "bilad-room-floor-map";
 const unassignedFloor = "Kat seçilmemiş";
@@ -924,7 +934,7 @@ export default function RoomsPage() {
                             }`}
                           >
                             <span className="block truncate text-[11px] font-bold md:text-sm">
-                              {day.slice(0, 3)}
+                              {dayShortNames[day]}
                             </span>
                           </button>
                         );
