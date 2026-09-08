@@ -30,6 +30,7 @@ type Reservation = {
   start_date: string;
   end_date: string;
   weekday: number;
+  recurrence_frequency?: string;
   created_by?: number;
   created_by_name?: string;
   status?: string;
@@ -64,6 +65,19 @@ const dayShortNames: Record<string, string> = {
   Cumartesi: "Cts",
   Pazar: "Paz",
 };
+
+const recurrenceOptions = [
+  { value: "weekly", label: "Haftada bir" },
+  { value: "biweekly", label: "İki haftada bir" },
+  { value: "monthly", label: "Ayda bir" },
+];
+
+function recurrenceLabel(frequency?: string) {
+  return (
+    recurrenceOptions.find((option) => option.value === frequency)?.label ||
+    "Haftada bir"
+  );
+}
 
 const FLOOR_STORAGE_KEY = "bilad-room-floors";
 const ROOM_FLOOR_STORAGE_KEY = "bilad-room-floor-map";
@@ -118,6 +132,7 @@ export default function RoomsPage() {
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
   const [selectedWeekdays, setSelectedWeekdays] = useState<string[]>([]);
+  const [recurrenceFrequency, setRecurrenceFrequency] = useState("weekly");
   const [startTime, setStartTime] = useState("");
   const [endTime, setEndTime] = useState("");
   const [selectedScheduleDay, setSelectedScheduleDay] = useState(dayNames[0]);
@@ -348,6 +363,7 @@ export default function RoomsPage() {
     setStartDate("");
     setEndDate("");
     setSelectedWeekdays([]);
+    setRecurrenceFrequency("weekly");
     setStartTime("");
     setEndTime("");
   }
@@ -360,6 +376,7 @@ export default function RoomsPage() {
     setStartDate(reservation.start_date);
     setEndDate(reservation.end_date);
     setSelectedWeekdays([String(reservation.weekday)]);
+    setRecurrenceFrequency(reservation.recurrence_frequency || "weekly");
     setStartTime(reservation.start_time.slice(0, 5));
     setEndTime(reservation.end_time.slice(0, 5));
     setOpenPanel("request");
@@ -389,6 +406,7 @@ export default function RoomsPage() {
           ...(editingId
             ? { weekday: Number(selectedWeekdays[0]) }
             : { weekdays: selectedWeekdays.map(Number) }),
+          recurrence_frequency: recurrenceFrequency,
           start_time: `${startTime}:00`,
           end_time: `${endTime}:00`,
         }),
@@ -730,6 +748,19 @@ export default function RoomsPage() {
                         required
                       />
 
+                      <div>
+                        <label className="mb-1.5 block text-sm font-semibold text-slate-700">
+                          Programın Sıklığı
+                        </label>
+
+                        <Select
+                          value={recurrenceFrequency}
+                          setValue={setRecurrenceFrequency}
+                          required
+                          options={recurrenceOptions}
+                        />
+                      </div>
+
                       <WeekdayPicker
                         selectedValues={selectedWeekdays}
                         onToggle={toggleWeekday}
@@ -860,6 +891,7 @@ export default function RoomsPage() {
                                 Tarih: {formatDate(reservation.start_date)} →{" "}
                                 {formatDate(reservation.end_date)}
                               </p>
+                              <p>Sıklık: {recurrenceLabel(reservation.recurrence_frequency)}</p>
                             </div>
 
                             {reservation.description && (
@@ -1091,6 +1123,10 @@ export default function RoomsPage() {
                                     <p className="mt-0.5 text-xs text-slate-400">
                                       {formatDate(reservation.start_date)} →{" "}
                                       {formatDate(reservation.end_date)}
+                                    </p>
+
+                                    <p className="mt-0.5 text-xs font-semibold text-sky-600">
+                                      {recurrenceLabel(reservation.recurrence_frequency)}
                                     </p>
                                   </div>
 
