@@ -117,7 +117,7 @@ export default function RoomsPage() {
   const [description, setDescription] = useState("");
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
-  const [selectedWeekdays, setSelectedWeekdays] = useState<string[]>(["0"]);
+  const [selectedWeekdays, setSelectedWeekdays] = useState<string[]>([]);
   const [startTime, setStartTime] = useState("");
   const [endTime, setEndTime] = useState("");
   const [selectedScheduleDay, setSelectedScheduleDay] = useState(dayNames[0]);
@@ -347,7 +347,7 @@ export default function RoomsPage() {
     setDescription("");
     setStartDate("");
     setEndDate("");
-    setSelectedWeekdays(["0"]);
+    setSelectedWeekdays([]);
     setStartTime("");
     setEndTime("");
   }
