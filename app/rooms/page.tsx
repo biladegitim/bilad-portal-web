@@ -5,9 +5,9 @@ import { useRouter } from "next/navigation";
 
 import Sidebar from "@/components/Sidebar";
 
-import { apiFetch } from "@/lib/api";
+import { apiFetch, apiUrl } from "@/lib/api";
 import { canApproveRooms, canManageRooms, fetchProfileAccess } from "@/lib/access";
-import { authHeaders, getAccessToken, jsonAuthHeaders } from "@/lib/auth";
+import { authHeaders, clearAuthSession, getAccessToken, jsonAuthHeaders } from "@/lib/auth";
 import { formatLocalDate } from "@/lib/dateTime";
 import { sortFloors } from "@/lib/floors";
 
@@ -66,6 +66,11 @@ const dayShortNames: Record<string, string> = {
   Pazar: "Paz",
 };
 
+type ProfileData = {
+  full_name: string;
+  profile_photo?: string | null;
+};
+
 const recurrenceOptions = [
   { value: "weekly", label: "Haftada bir" },
   { value: "biweekly", label: "İki haftada bir" },
@@ -117,6 +122,7 @@ export default function RoomsPage() {
   const [isSuperAdmin, setIsSuperAdmin] = useState(false);
   const [canReviewRoomRequests, setCanReviewRoomRequests] = useState(false);
   const [isVolunteer, setIsVolunteer] = useState(false);
+  const [profile, setProfile] = useState<ProfileData | null>(null);
   const [openPanel, setOpenPanel] = useState<"rooms" | "roomList" | "request" | "pending" | "archive" | null>(null);
 
   const [roomName, setRoomName] = useState("");
@@ -207,6 +213,18 @@ export default function RoomsPage() {
       setCanReviewRoomRequests(canReview);
       setIsVolunteer(access?.role === "volunteer");
 
+      if (access?.role === "volunteer") {
+        const profileRes = await apiFetch("/profile", {
+          headers: authHeaders(),
+        });
+
+        if (profileRes.ok) {
+          const profileData = await profileRes.json();
+          setProfile(profileData);
+          localStorage.setItem("user", JSON.stringify(profileData));
+        }
+      }
+
       const roomsRes = await apiFetch("/rooms");
       const roomsData = await roomsRes.json();
       setRooms(roomsData.rooms || []);
@@ -248,6 +266,7 @@ export default function RoomsPage() {
       setPendingReservations([]);
       setArchivedReservations([]);
       setIsVolunteer(false);
+      setProfile(null);
     } finally {
       setLoading(false);
     }
@@ -508,6 +527,18 @@ export default function RoomsPage() {
     setSelectedScheduleRoomId(null);
   }
 
+  function getProfilePhotoUrl() {
+    if (!profile?.profile_photo) return null;
+    if (profile.profile_photo.startsWith("http")) return profile.profile_photo;
+
+    return apiUrl(profile.profile_photo);
+  }
+
+  function logout() {
+    clearAuthSession();
+    router.push("/login");
+  }
+
   return (
     <div className="flex min-h-screen bg-[#F6F9FF]">
       <Sidebar />
@@ -527,13 +558,47 @@ export default function RoomsPage() {
               </div>
 
               {isVolunteer && (
-                <button
-                  type="button"
-                  onClick={() => router.push("/profile")}
-                  className="h-10 shrink-0 rounded-2xl border border-[#E6EEF9] bg-white px-4 text-sm font-semibold text-slate-600 shadow-sm transition hover:bg-slate-50"
-                >
-                  Profilim
-                </button>
+                <div className="ml-auto flex max-w-[185px] shrink-0 items-center gap-2 rounded-xl border border-[#E6EEF9] bg-white px-2.5 py-1.5 text-left shadow-sm transition hover:shadow-md sm:max-w-[210px]">
+                  <div className="flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-full bg-sky-100 sm:h-9 sm:w-9">
+                    {getProfilePhotoUrl() ? (
+                      <img
+                        src={getProfilePhotoUrl()!}
+                        alt="Profil"
+                        className="h-full w-full object-cover"
+                      />
+                    ) : (
+                      <span className="text-xs font-bold text-sky-700">
+                        {profile?.full_name?.charAt(0) || "B"}
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="min-w-0">
+                    <p className="truncate text-xs font-bold leading-tight text-slate-800 sm:text-sm">
+                      {profile?.full_name || "Kullanıcı"}
+                    </p>
+
+                    <div className="mt-0.5 flex items-center gap-x-1.5 whitespace-nowrap text-[11px] font-semibold leading-tight">
+                      <button
+                        type="button"
+                        onClick={() => router.push("/profile")}
+                        className="text-sky-600 transition hover:text-sky-700"
+                      >
+                        Profili Düzenle
+                      </button>
+
+                      <span className="text-slate-200">|</span>
+
+                      <button
+                        type="button"
+                        onClick={logout}
+                        className="text-red-500 transition hover:text-red-600"
+                      >
+                        Çıkış Yap
+                      </button>
+                    </div>
+                  </div>
+                </div>
               )}
             </div>
           </header>
