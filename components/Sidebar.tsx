@@ -23,13 +23,17 @@ const menuItems = [
 
 export default function Sidebar() {
   const pathname = usePathname();
-  const { access } = useProfileAccess();
+  const { access, loading } = useProfileAccess();
   const { count: leaveNotificationCount } = useLeaveNotifications();
 
   const [mobileOpen, setMobileOpen] = useState(false);
   const role = access?.role;
   const isSuperAdmin = role === "super_admin";
   const isAdmin = role === "admin" || role === "super_admin";
+
+  if (loading || role === "volunteer" || role === "qr") {
+    return null;
+  }
 
   function handleLogout() {
     clearAuthSession();

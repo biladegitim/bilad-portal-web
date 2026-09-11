@@ -11,10 +11,20 @@ export default function QrRoleGuard() {
 
   useEffect(() => {
     if (!getAccessToken()) return;
-    if (getStoredUserRole() !== "qr") return;
-    if (pathname === "/qr") return;
+    const role = getStoredUserRole();
 
-    router.replace("/qr");
+    if (role === "qr") {
+      if (pathname === "/qr") return;
+
+      router.replace("/qr");
+      return;
+    }
+
+    if (role === "volunteer") {
+      if (pathname === "/rooms" || pathname === "/profile") return;
+
+      router.replace("/rooms");
+    }
   }, [pathname, router]);
 
   return null;

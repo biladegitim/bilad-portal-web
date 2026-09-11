@@ -50,7 +50,13 @@ export default function LoginPage() {
         () => {}
       );
 
-      window.location.href = data.user?.role === "qr" ? "/qr" : "/";
+      if (data.user?.role === "qr") {
+        window.location.href = "/qr";
+      } else if (data.user?.role === "volunteer") {
+        window.location.href = "/rooms";
+      } else {
+        window.location.href = "/";
+      }
     } catch (err) {
       console.error("LOGIN ERROR:", err);
 

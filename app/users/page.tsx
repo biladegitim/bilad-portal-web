@@ -360,6 +360,7 @@ export default function UsersPage() {
     if (role === "super_admin") return "Süper Admin";
     if (role === "admin") return "Admin";
     if (role === "qr") return "QR";
+    if (role === "volunteer") return "Gönüllü";
     return "Çalışan";
   }
 
@@ -367,6 +368,7 @@ export default function UsersPage() {
     if (role === "super_admin") return "bg-sky-50 text-sky-700";
     if (role === "admin") return "bg-indigo-50 text-indigo-700";
     if (role === "qr") return "bg-amber-50 text-amber-700";
+    if (role === "volunteer") return "bg-emerald-50 text-emerald-700";
     return "bg-slate-100 text-slate-700";
   }
 
@@ -518,6 +520,7 @@ export default function UsersPage() {
                       setValue={setEditRole}
                       options={[
                         { value: "employee", label: "Çalışan" },
+                        { value: "volunteer", label: "Gönüllü" },
                         { value: "qr", label: "QR" },
                         { value: "admin", label: "Admin" },
                         { value: "super_admin", label: "Süper Admin" },

@@ -11,6 +11,7 @@ import { authHeaders, clearAuthSession, getAccessToken, jsonAuthHeaders } from "
 type ProfileData = {
   full_name: string;
   email: string;
+  role?: string;
   position?: string;
   profile_photo?: string | null;
 };
@@ -157,6 +158,16 @@ export default function ProfilePage() {
           <header className="mb-5 md:mb-8">
             <div className="flex h-14 items-center justify-between md:h-16">
               <div className="h-11 w-11 md:hidden" />
+
+              {profile?.role === "volunteer" && (
+                <button
+                  type="button"
+                  onClick={() => router.push("/rooms")}
+                  className="ml-auto h-10 rounded-2xl border border-[#E6EEF9] bg-white px-4 text-sm font-semibold text-slate-600 shadow-sm transition hover:bg-slate-50"
+                >
+                  Kat Planı
+                </button>
+              )}
             </div>
 
             <div className="mt-5 md:mt-6">

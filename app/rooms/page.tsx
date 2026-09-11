@@ -116,6 +116,7 @@ export default function RoomsPage() {
   const [loading, setLoading] = useState(true);
   const [isSuperAdmin, setIsSuperAdmin] = useState(false);
   const [canReviewRoomRequests, setCanReviewRoomRequests] = useState(false);
+  const [isVolunteer, setIsVolunteer] = useState(false);
   const [openPanel, setOpenPanel] = useState<"rooms" | "roomList" | "request" | "pending" | "archive" | null>(null);
 
   const [roomName, setRoomName] = useState("");
@@ -204,6 +205,7 @@ export default function RoomsPage() {
 
       setIsSuperAdmin(canManage);
       setCanReviewRoomRequests(canReview);
+      setIsVolunteer(access?.role === "volunteer");
 
       const roomsRes = await apiFetch("/rooms");
       const roomsData = await roomsRes.json();
@@ -245,6 +247,7 @@ export default function RoomsPage() {
       setWeeklySchedule({});
       setPendingReservations([]);
       setArchivedReservations([]);
+      setIsVolunteer(false);
     } finally {
       setLoading(false);
     }
@@ -512,14 +515,26 @@ export default function RoomsPage() {
       <main className="flex-1 px-4 py-4 md:p-8">
         <div className="mx-auto max-w-7xl">
           <header className="mb-5 md:mb-8">
-            <div>
-              <h1 className="text-2xl font-bold tracking-tight text-slate-800 md:text-3xl">
-                Kat Planı
-              </h1>
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <h1 className="text-2xl font-bold tracking-tight text-slate-800 md:text-3xl">
+                  Kat Planı
+                </h1>
 
-              <p className="mt-1.5 text-sm text-slate-400 md:text-base">
-                Mekanları ve haftalık programları yönetin.
-              </p>
+                <p className="mt-1.5 text-sm text-slate-400 md:text-base">
+                  Mekanları ve haftalık programları yönetin.
+                </p>
+              </div>
+
+              {isVolunteer && (
+                <button
+                  type="button"
+                  onClick={() => router.push("/profile")}
+                  className="h-10 shrink-0 rounded-2xl border border-[#E6EEF9] bg-white px-4 text-sm font-semibold text-slate-600 shadow-sm transition hover:bg-slate-50"
+                >
+                  Profilim
+                </button>
+              )}
             </div>
           </header>
 
