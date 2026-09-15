@@ -164,31 +164,11 @@ function getRoomUsageClasses(status: UsageStatus) {
 
 function getFloorUsageClasses(status: UsageStatus, active: boolean) {
   if (active) {
-    if (status === "active") {
-      return "border-red-500 bg-red-600 text-white shadow-sm ring-2 ring-red-100";
-    }
-
-    if (status === "future") {
-      return "border-amber-400 bg-amber-500 text-white shadow-sm ring-2 ring-amber-100";
-    }
-
-    if (status === "past") {
-      return "border-sky-500 bg-sky-600 text-white shadow-sm ring-2 ring-sky-100";
-    }
-
     return "border-sky-500 bg-white text-sky-700 shadow-sm";
   }
 
-  if (status === "active") {
-    return "border-red-300 bg-red-100 text-red-800 shadow-sm hover:bg-red-100";
-  }
-
-  if (status === "future") {
-    return "border-amber-300 bg-amber-100 text-amber-800 shadow-sm hover:bg-amber-100";
-  }
-
-  if (status === "past") {
-    return "border-sky-200 bg-sky-50 text-sky-700 shadow-sm hover:bg-sky-100";
+  if (status !== "idle") {
+    return "border-sky-300 bg-sky-100 text-sky-800 shadow-sm hover:bg-sky-100";
   }
 
   return "border-[#E6EEF9] bg-[#F8FBFF] text-slate-600 hover:bg-white";
@@ -624,17 +604,7 @@ export default function Home() {
                             active
                           )}`}
                         >
-                          <span className="block">{floor}</span>
-
-                          {floorUsageStatus !== "idle" && (
-                            <span
-                              className={`mt-1 block text-[10px] font-semibold ${
-                                active ? "text-white/90" : "text-current"
-                              }`}
-                            >
-                              {getRoomUsageLabel(floorUsageStatus)}
-                            </span>
-                          )}
+                          {floor}
                         </button>
                       );
                     })}
