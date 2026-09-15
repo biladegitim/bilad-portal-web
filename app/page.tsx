@@ -162,6 +162,38 @@ function getRoomUsageClasses(status: UsageStatus) {
   return "border-[#E6EEF9] bg-[#F8FBFF] text-slate-600 hover:bg-sky-50";
 }
 
+function getFloorUsageClasses(status: UsageStatus, active: boolean) {
+  if (active) {
+    if (status === "active") {
+      return "border-red-500 bg-red-600 text-white shadow-sm ring-2 ring-red-100";
+    }
+
+    if (status === "future") {
+      return "border-amber-400 bg-amber-500 text-white shadow-sm ring-2 ring-amber-100";
+    }
+
+    if (status === "past") {
+      return "border-sky-500 bg-sky-600 text-white shadow-sm ring-2 ring-sky-100";
+    }
+
+    return "border-sky-500 bg-white text-sky-700 shadow-sm";
+  }
+
+  if (status === "active") {
+    return "border-red-300 bg-red-100 text-red-800 shadow-sm hover:bg-red-100";
+  }
+
+  if (status === "future") {
+    return "border-amber-300 bg-amber-100 text-amber-800 shadow-sm hover:bg-amber-100";
+  }
+
+  if (status === "past") {
+    return "border-sky-200 bg-sky-50 text-sky-700 shadow-sm hover:bg-sky-100";
+  }
+
+  return "border-[#E6EEF9] bg-[#F8FBFF] text-slate-600 hover:bg-white";
+}
+
 function getUsageBadgeClasses(status: UsageStatus) {
   if (status === "active") return "bg-red-100 text-red-700";
   if (status === "future") return "bg-amber-100 text-amber-700";
@@ -242,6 +274,18 @@ export default function Home() {
 
     return grouped;
   }, [todayRoomReservations]);
+
+  const usageStatusByFloor = useMemo(() => {
+    return floorOptions.reduce<Record<string, UsageStatus>>((statuses, floor) => {
+      const floorReservations = (roomsByFloor[floor] || []).flatMap(
+        (room) => reservationsByRoom[room.id] || []
+      );
+
+      statuses[floor] = getRoomUsageStatus(floorReservations);
+
+      return statuses;
+    }, {});
+  }, [floorOptions, reservationsByRoom, roomsByFloor]);
 
   const selectedFloorRooms = selectedFloor ? roomsByFloor[selectedFloor] || [] : [];
   const selectedRoom = rooms.find((room) => room.id === selectedRoomId);
@@ -566,6 +610,7 @@ export default function Home() {
                   >
                     {floorOptions.map((floor) => {
                       const active = selectedFloor === floor;
+                      const floorUsageStatus = usageStatusByFloor[floor] || "idle";
 
                       return (
                         <button
@@ -574,13 +619,22 @@ export default function Home() {
                           role="tab"
                           onClick={() => selectFloor(floor)}
                           aria-selected={active}
-                          className={`shrink-0 rounded-2xl border px-4 py-2.5 text-sm font-bold transition ${
+                          className={`shrink-0 rounded-2xl border px-4 py-2.5 text-left text-sm font-bold transition ${getFloorUsageClasses(
+                            floorUsageStatus,
                             active
-                              ? "border-sky-500 bg-white text-sky-700 shadow-sm"
-                              : "border-[#E6EEF9] bg-[#F8FBFF] text-slate-600 hover:bg-white"
-                          }`}
+                          )}`}
                         >
-                          {floor}
+                          <span className="block">{floor}</span>
+
+                          {floorUsageStatus !== "idle" && (
+                            <span
+                              className={`mt-1 block text-[10px] font-semibold ${
+                                active ? "text-white/90" : "text-current"
+                              }`}
+                            >
+                              {getRoomUsageLabel(floorUsageStatus)}
+                            </span>
+                          )}
                         </button>
                       );
                     })}
