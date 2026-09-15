@@ -72,6 +72,7 @@ type ProfileData = {
 };
 
 const recurrenceOptions = [
+  { value: "none", label: "Yok" },
   { value: "weekly", label: "Haftada bir" },
   { value: "biweekly", label: "İki haftada bir" },
   { value: "monthly", label: "Ayda bir" },
@@ -82,6 +83,18 @@ function recurrenceLabel(frequency?: string) {
     recurrenceOptions.find((option) => option.value === frequency)?.label ||
     "Haftada bir"
   );
+}
+
+function isDateAfter(start: string, end: string) {
+  if (!start || !end) return false;
+
+  return end < start;
+}
+
+function isTimeAfterOrSame(start: string, end: string) {
+  if (!start || !end) return false;
+
+  return end <= start;
 }
 
 const FLOOR_STORAGE_KEY = "bilad-room-floors";
@@ -422,6 +435,16 @@ export default function RoomsPage() {
 
     if (selectedWeekdays.length === 0) {
       alert("En az bir gün seçmelisiniz.");
+      return;
+    }
+
+    if (isDateAfter(startDate, endDate)) {
+      alert("Bitiş tarihi başlangıç tarihinden önce olamaz.");
+      return;
+    }
+
+    if (isTimeAfterOrSame(startTime, endTime)) {
+      alert("Bitiş saati başlangıç saatinden sonra olmalıdır.");
       return;
     }
 
