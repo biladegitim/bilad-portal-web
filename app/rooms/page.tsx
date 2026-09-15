@@ -153,7 +153,7 @@ export default function RoomsPage() {
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
   const [selectedWeekdays, setSelectedWeekdays] = useState<string[]>([]);
-  const [recurrenceFrequency, setRecurrenceFrequency] = useState("weekly");
+  const [recurrenceFrequency, setRecurrenceFrequency] = useState("none");
   const [startTime, setStartTime] = useState("");
   const [endTime, setEndTime] = useState("");
   const [selectedScheduleDay, setSelectedScheduleDay] = useState(dayNames[0]);
@@ -411,7 +411,7 @@ export default function RoomsPage() {
     setStartDate("");
     setEndDate("");
     setSelectedWeekdays([]);
-    setRecurrenceFrequency("weekly");
+    setRecurrenceFrequency("none");
     setStartTime("");
     setEndTime("");
   }
