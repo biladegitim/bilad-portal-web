@@ -202,6 +202,21 @@ export default function RoomsPage() {
     return grouped;
   }, [floorOptions, rooms, roomFloorMap]);
 
+  const reservationRoomOptions = useMemo(
+    () =>
+      floorOptions.flatMap((floor) =>
+        [...(roomsByFloor[floor] || [])]
+          .sort((first, second) =>
+            first.name.localeCompare(second.name, "tr-TR", { numeric: true })
+          )
+          .map((room) => ({
+            value: String(room.id),
+            label: `${floor} / ${room.name}`,
+          }))
+      ),
+    [floorOptions, roomsByFloor]
+  );
+
   const hasAssignableFloors = floorOptions.some(
     (floor) => floor !== unassignedFloor
   );
@@ -850,10 +865,7 @@ export default function RoomsPage() {
                         required
                         options={[
                           { value: "", label: "Mekan seç" },
-                          ...rooms.map((room) => ({
-                            value: String(room.id),
-                            label: `${getRoomFloor(room, roomFloorMap)} / ${room.name}`,
-                          })),
+                          ...reservationRoomOptions,
                         ]}
                       />
 
