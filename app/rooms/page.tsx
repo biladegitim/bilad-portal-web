@@ -67,6 +67,7 @@ const dayShortNames: Record<string, string> = {
 };
 
 type ProfileData = {
+  id: number;
   full_name: string;
   profile_photo?: string | null;
 };
@@ -230,6 +231,9 @@ export default function RoomsPage() {
   const selectedRoomReservations = selectedDayReservations.filter(
     (reservation) => reservation.room_id === selectedScheduleRoomId
   );
+  const ownPendingReservationCount = pendingReservations.filter(
+    (reservation) => reservation.created_by === profile?.id
+  ).length;
 
   async function fetchData() {
     try {
@@ -241,16 +245,14 @@ export default function RoomsPage() {
       setCanReviewRoomRequests(canReview);
       setIsVolunteer(access?.role === "volunteer");
 
-      if (access?.role === "volunteer") {
-        const profileRes = await apiFetch("/profile", {
-          headers: authHeaders(),
-        });
+      const profileRes = await apiFetch("/profile", {
+        headers: authHeaders(),
+      });
 
-        if (profileRes.ok) {
-          const profileData = await profileRes.json();
-          setProfile(profileData);
-          localStorage.setItem("user", JSON.stringify(profileData));
-        }
+      if (profileRes.ok) {
+        const profileData = await profileRes.json();
+        setProfile(profileData);
+        localStorage.setItem("user", JSON.stringify(profileData));
       }
 
       const roomsRes = await apiFetch("/rooms");
@@ -263,20 +265,21 @@ export default function RoomsPage() {
         normalizeWeeklySchedule(weeklyData.weekly_schedule || {})
       );
 
+      const pendingRes = await apiFetch("/room-reservations/pending", {
+        headers: authHeaders(),
+      });
+
+      if (pendingRes.ok) {
+        const pendingData = await pendingRes.json();
+        setPendingReservations(pendingData.reservations || []);
+      } else {
+        setPendingReservations([]);
+      }
+
       if (canReview) {
-        const pendingRes = await apiFetch("/room-reservations/pending", {
-          headers: authHeaders(),
-        });
         const archiveRes = await apiFetch("/room-reservations/archive", {
           headers: authHeaders(),
         });
-
-        if (pendingRes.ok) {
-          const pendingData = await pendingRes.json();
-          setPendingReservations(pendingData.reservations || []);
-        } else {
-          setPendingReservations([]);
-        }
 
         if (archiveRes.ok) {
           const archiveData = await archiveRes.json();
@@ -285,7 +288,6 @@ export default function RoomsPage() {
           setArchivedReservations([]);
         }
       } else {
-        setPendingReservations([]);
         setArchivedReservations([]);
       }
     } catch {
@@ -570,6 +572,10 @@ export default function RoomsPage() {
     if (profile.profile_photo.startsWith("http")) return profile.profile_photo;
 
     return apiUrl(profile.profile_photo);
+  }
+
+  function canDeleteReservation(reservation: Reservation) {
+    return canReviewRoomRequests || reservation.created_by === profile?.id;
   }
 
   function logout() {
@@ -1028,32 +1034,54 @@ export default function RoomsPage() {
                               </p>
                             )}
 
-                            <div className="mt-4 grid grid-cols-2 gap-2">
-                              <button
-                                type="button"
-                                onClick={() =>
-                                  updateRoomRequestStatus(
-                                    reservation.reservation_id,
-                                    "approve"
-                                  )
-                                }
-                                className="h-10 rounded-2xl bg-emerald-500 text-sm font-semibold text-white transition hover:bg-emerald-600"
-                              >
-                                Onayla
-                              </button>
+                            <div
+                              className={`mt-4 grid gap-2 ${
+                                canReviewRoomRequests && canDeleteReservation(reservation)
+                                  ? "grid-cols-3"
+                                  : canReviewRoomRequests
+                                    ? "grid-cols-2"
+                                    : "grid-cols-1"
+                              }`}
+                            >
+                              {canReviewRoomRequests && (
+                                <>
+                                  <button
+                                    type="button"
+                                    onClick={() =>
+                                      updateRoomRequestStatus(
+                                        reservation.reservation_id,
+                                        "approve"
+                                      )
+                                    }
+                                    className="h-10 rounded-2xl bg-emerald-500 text-sm font-semibold text-white transition hover:bg-emerald-600"
+                                  >
+                                    Onayla
+                                  </button>
 
-                              <button
-                                type="button"
-                                onClick={() =>
-                                  updateRoomRequestStatus(
-                                    reservation.reservation_id,
-                                    "reject"
-                                  )
-                                }
-                                className="h-10 rounded-2xl border border-[#E6EEF9] bg-white text-sm font-semibold text-slate-600 transition hover:bg-slate-50"
-                              >
-                                Reddet
-                              </button>
+                                  <button
+                                    type="button"
+                                    onClick={() =>
+                                      updateRoomRequestStatus(
+                                        reservation.reservation_id,
+                                        "reject"
+                                      )
+                                    }
+                                    className="h-10 rounded-2xl border border-[#E6EEF9] bg-white text-sm font-semibold text-slate-600 transition hover:bg-slate-50"
+                                  >
+                                    Reddet
+                                  </button>
+                                </>
+                              )}
+
+                              {canDeleteReservation(reservation) && (
+                                <button
+                                  type="button"
+                                  onClick={() => handleDeleteReservation(reservation)}
+                                  className="h-10 rounded-2xl bg-red-50 text-sm font-semibold text-red-600 transition hover:bg-red-100"
+                                >
+                                  Sil
+                                </button>
+                              )}
                             </div>
                           </article>
                         ))}
@@ -1355,23 +1383,31 @@ export default function RoomsPage() {
                                   </p>
                                 )}
 
-                                {canReviewRoomRequests && (
-                                  <div className="mt-3 grid grid-cols-2 gap-2">
-                                    <button
-                                      type="button"
-                                      onClick={() => startEditReservation(reservation)}
-                                      className="h-10 rounded-2xl border border-[#E6EEF9] bg-white text-sm font-semibold text-slate-600 transition hover:bg-slate-50"
-                                    >
-                                      Düzenle
-                                    </button>
+                                {(canReviewRoomRequests || canDeleteReservation(reservation)) && (
+                                  <div
+                                    className={`mt-3 grid gap-2 ${
+                                      canReviewRoomRequests ? "grid-cols-2" : "grid-cols-1"
+                                    }`}
+                                  >
+                                    {canReviewRoomRequests && (
+                                      <button
+                                        type="button"
+                                        onClick={() => startEditReservation(reservation)}
+                                        className="h-10 rounded-2xl border border-[#E6EEF9] bg-white text-sm font-semibold text-slate-600 transition hover:bg-slate-50"
+                                      >
+                                        Düzenle
+                                      </button>
+                                    )}
 
-                                    <button
-                                      type="button"
-                                      onClick={() => handleDeleteReservation(reservation)}
-                                      className="h-10 rounded-2xl bg-red-50 text-sm font-semibold text-red-600 transition hover:bg-red-100"
-                                    >
-                                      Sil
-                                    </button>
+                                    {canDeleteReservation(reservation) && (
+                                      <button
+                                        type="button"
+                                        onClick={() => handleDeleteReservation(reservation)}
+                                        className="h-10 rounded-2xl bg-red-50 text-sm font-semibold text-red-600 transition hover:bg-red-100"
+                                      >
+                                        Sil
+                                      </button>
+                                    )}
                                   </div>
                                 )}
                               </article>
@@ -1416,7 +1452,7 @@ export default function RoomsPage() {
                       }
                     />
 
-                    {canReviewRoomRequests && (
+                    {(canReviewRoomRequests || ownPendingReservationCount > 0) && (
                       <HeaderActionButton
                         active={openPanel === "pending"}
                         label="Bekleyen Talepler"
