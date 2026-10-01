@@ -14,58 +14,7 @@ type ProfileData = {
   role?: string;
   position?: string;
   profile_photo?: string | null;
-  work_start_time?: string | null;
-  work_end_time?: string | null;
-  work_type?: "full_time" | "part_time";
-  weekly_work_schedule?: WeeklyWorkDay[];
 };
-
-type WeeklyWorkDay = {
-  weekday: number;
-  is_working: boolean;
-  start_time: string | null;
-  end_time: string | null;
-};
-
-const weekDays = [
-  "Pazartesi",
-  "Salı",
-  "Çarşamba",
-  "Perşembe",
-  "Cuma",
-  "Cumartesi",
-  "Pazar",
-];
-
-function weeklyScheduleForProfile(profile: ProfileData) {
-  if (profile.work_type === "part_time") {
-    const byDay = new Map(
-      (profile.weekly_work_schedule || []).map((day) => [day.weekday, day])
-    );
-
-    return weekDays.map((label, weekday) => {
-      const day = byDay.get(weekday);
-
-      return {
-        label,
-        isWorking: Boolean(day?.is_working),
-        time:
-          day?.is_working && day.start_time && day.end_time
-            ? `${day.start_time.slice(0, 5)} - ${day.end_time.slice(0, 5)}`
-            : "Çalışma yok",
-      };
-    });
-  }
-
-  return weekDays.map((label, weekday) => ({
-    label,
-    isWorking: weekday < 6 && Boolean(profile.work_start_time && profile.work_end_time),
-    time:
-      weekday < 6 && profile.work_start_time && profile.work_end_time
-        ? `${profile.work_start_time.slice(0, 5)} - ${profile.work_end_time.slice(0, 5)}`
-        : "Çalışma yok",
-  }));
-}
 
 export default function ProfilePage() {
   const router = useRouter();
@@ -262,42 +211,6 @@ export default function ProfilePage() {
                     <InfoItem label="Ad Soyad" value={profile.full_name} />
                     <InfoItem label="Kurumdaki Konum" value={profile.position || "Tanımlanmamış"} />
                     <InfoItem label="Mail" value={profile.email} wide />
-                  </div>
-
-                  <div className="mt-5 rounded-2xl border border-[#E6EEF9] bg-[#F8FBFF] p-4">
-                    <div className="mb-3 flex items-center justify-between gap-3">
-                      <div>
-                        <h3 className="text-base font-bold text-slate-800">
-                          Haftalık Çalışma Planı
-                        </h3>
-
-                        <p className="mt-1 text-xs text-slate-400">
-                          {profile.work_type === "part_time"
-                            ? "Yarı zamanlı çalışma düzeniniz."
-                            : "Tam zamanlı çalışma düzeniniz."}
-                        </p>
-                      </div>
-
-                      <span className="shrink-0 rounded-full bg-sky-50 px-3 py-1 text-xs font-semibold text-sky-700">
-                        {profile.work_type === "part_time" ? "Yarı Zamanlı" : "Tam Zamanlı"}
-                      </span>
-                    </div>
-
-                    <div className="grid gap-2 sm:grid-cols-2">
-                      {weeklyScheduleForProfile(profile).map((day) => (
-                        <div
-                          key={day.label}
-                          className={`rounded-2xl border p-3 ${
-                            day.isWorking
-                              ? "border-sky-100 bg-white text-slate-700"
-                              : "border-slate-100 bg-slate-50 text-slate-400"
-                          }`}
-                        >
-                          <p className="text-sm font-bold">{day.label}</p>
-                          <p className="mt-1 text-xs font-semibold">{day.time}</p>
-                        </div>
-                      ))}
-                    </div>
                   </div>
 
                   <div className="mt-5 flex flex-col gap-3 sm:flex-row">

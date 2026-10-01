@@ -17,16 +17,7 @@ type UserItem = {
   is_active: boolean;
   work_start_time: string | null;
   work_end_time: string | null;
-  work_type?: "full_time" | "part_time";
-  weekly_work_schedule?: WeeklyWorkDay[];
   annual_leave_days: number;
-};
-
-type WeeklyWorkDay = {
-  weekday: number;
-  is_working: boolean;
-  start_time: string | null;
-  end_time: string | null;
 };
 
 type DeviceConflict = {
@@ -49,53 +40,6 @@ const permissionOptions = [
   { code: "attendance.view", label: "Giriş-Çıkış Raporları" },
 ];
 
-const weekDays = [
-  "Pazartesi",
-  "Salı",
-  "Çarşamba",
-  "Perşembe",
-  "Cuma",
-  "Cumartesi",
-  "Pazar",
-];
-
-function createDefaultWeeklySchedule(startTime = "", endTime = ""): WeeklyWorkDay[] {
-  return weekDays.map((_, weekday) => ({
-    weekday,
-    is_working: weekday < 5,
-    start_time: weekday < 5 ? startTime || "09:00" : null,
-    end_time: weekday < 5 ? endTime || "18:00" : null,
-  }));
-}
-
-function normalizeWeeklySchedule(
-  schedule: WeeklyWorkDay[] | undefined,
-  startTime = "",
-  endTime = ""
-) {
-  const byDay = new Map((schedule || []).map((day) => [day.weekday, day]));
-
-  return weekDays.map((_, weekday) => {
-    const day = byDay.get(weekday);
-
-    if (!day) {
-      return {
-        weekday,
-        is_working: weekday < 5,
-        start_time: weekday < 5 ? startTime || "09:00" : null,
-        end_time: weekday < 5 ? endTime || "18:00" : null,
-      };
-    }
-
-    return {
-      weekday,
-      is_working: Boolean(day.is_working),
-      start_time: day.start_time ? day.start_time.slice(0, 5) : null,
-      end_time: day.end_time ? day.end_time.slice(0, 5) : null,
-    };
-  });
-}
-
 export default function UsersPage() {
   const router = useRouter();
 
@@ -116,10 +60,6 @@ export default function UsersPage() {
   const [editSupervisorId, setEditSupervisorId] = useState("");
   const [editWorkStart, setEditWorkStart] = useState("");
   const [editWorkEnd, setEditWorkEnd] = useState("");
-  const [editWorkType, setEditWorkType] = useState<"full_time" | "part_time">("full_time");
-  const [editWeeklySchedule, setEditWeeklySchedule] = useState<WeeklyWorkDay[]>(
-    createDefaultWeeklySchedule()
-  );
   const [editAnnualLeaveDays, setEditAnnualLeaveDays] = useState("");
   const [selectedPermissions, setSelectedPermissions] = useState<string[]>([]);
   const [resetDeviceUserId, setResetDeviceUserId] = useState("");
@@ -197,14 +137,6 @@ export default function UsersPage() {
     setEditSupervisorId(user.supervisor_id ? String(user.supervisor_id) : "");
     setEditWorkStart(user.work_start_time ? user.work_start_time.slice(0, 5) : "");
     setEditWorkEnd(user.work_end_time ? user.work_end_time.slice(0, 5) : "");
-    setEditWorkType(user.work_type === "part_time" ? "part_time" : "full_time");
-    setEditWeeklySchedule(
-      normalizeWeeklySchedule(
-        user.weekly_work_schedule,
-        user.work_start_time ? user.work_start_time.slice(0, 5) : "",
-        user.work_end_time ? user.work_end_time.slice(0, 5) : ""
-      )
-    );
     setEditAnnualLeaveDays(String(user.annual_leave_days || 0));
 
     const response = await apiFetch(`/users/${user.id}/permissions`, {
@@ -229,26 +161,6 @@ export default function UsersPage() {
       prev.includes(code)
         ? prev.filter((item) => item !== code)
         : [...prev, code]
-    );
-  }
-
-  function updateWeeklyScheduleDay(
-    weekday: number,
-    updates: Partial<WeeklyWorkDay>
-  ) {
-    setEditWeeklySchedule((current) =>
-      current.map((day) =>
-        day.weekday === weekday
-          ? {
-              ...day,
-              ...updates,
-              start_time:
-                updates.is_working === false ? null : updates.start_time ?? day.start_time,
-              end_time:
-                updates.is_working === false ? null : updates.end_time ?? day.end_time,
-            }
-          : day
-      )
     );
   }
 
@@ -278,32 +190,23 @@ export default function UsersPage() {
         }
       );
 
-      const workResponse = await apiFetch(
-        `/users/${editingUser.id}/work-hours`,
-        {
-          method: "PATCH",
-          headers: jsonAuthHeaders(),
-          body: JSON.stringify({
-            work_type: editWorkType,
-            work_start_time:
-              editWorkType === "full_time" && editWorkStart
-                ? `${editWorkStart}:00`
-                : null,
-            work_end_time:
-              editWorkType === "full_time" && editWorkEnd ? `${editWorkEnd}:00` : null,
-            weekly_work_schedule:
-              editWorkType === "part_time"
-                ? editWeeklySchedule.map((day) => ({
-                    weekday: day.weekday,
-                    is_working: day.is_working,
-                    start_time:
-                      day.is_working && day.start_time ? `${day.start_time}:00` : null,
-                    end_time: day.is_working && day.end_time ? `${day.end_time}:00` : null,
-                  }))
-                : null,
-          }),
-        }
-      );
+      let workResponseOk = true;
+
+      if (editWorkStart && editWorkEnd) {
+        const workResponse = await apiFetch(
+          `/users/${editingUser.id}/work-hours`,
+          {
+            method: "PATCH",
+            headers: jsonAuthHeaders(),
+            body: JSON.stringify({
+              work_start_time: `${editWorkStart}:00`,
+              work_end_time: `${editWorkEnd}:00`,
+            }),
+          }
+        );
+
+        workResponseOk = workResponse.ok;
+      }
 
       const annualLeaveResponse = await apiFetch(
         `/users/${editingUser.id}/annual-leave`,
@@ -316,7 +219,7 @@ export default function UsersPage() {
         }
       );
 
-      if (!roleResponse.ok || !orgResponse.ok || !workResponse.ok || !annualLeaveResponse.ok) {
+      if (!roleResponse.ok || !orgResponse.ok || !workResponseOk || !annualLeaveResponse.ok) {
         alert("Kullanıcı güncellenemedi. Backend endpointlerini kontrol edin.");
         return;
       }
@@ -467,22 +370,6 @@ export default function UsersPage() {
     if (role === "qr") return "bg-amber-50 text-amber-700";
     if (role === "volunteer") return "bg-emerald-50 text-emerald-700";
     return "bg-slate-100 text-slate-700";
-  }
-
-  function workSummary(user: UserItem) {
-    if (user.work_type === "part_time") {
-      const workingDays = (user.weekly_work_schedule || []).filter(
-        (day) => day.is_working
-      );
-
-      if (workingDays.length === 0) return "Yarı zamanlı";
-
-      return `Yarı zamanlı · ${workingDays.length} gün`;
-    }
-
-    return `${user.work_start_time?.slice(0, 5) || "-"} / ${
-      user.work_end_time?.slice(0, 5) || "-"
-    }`;
   }
 
   function formatDateTime(value: string) {
@@ -662,35 +549,19 @@ export default function UsersPage() {
                       ]}
                     />
 
-                    <Select
-                      label="Çalışma Şekli"
-                      value={editWorkType}
-                      setValue={(value) =>
-                        setEditWorkType(value === "part_time" ? "part_time" : "full_time")
-                      }
-                      options={[
-                        { value: "full_time", label: "Tam Zamanlı" },
-                        { value: "part_time", label: "Yarı Zamanlı" },
-                      ]}
+                    <LabeledInput
+                      label="Mesai Başlangıç"
+                      type="time"
+                      value={editWorkStart}
+                      setValue={setEditWorkStart}
                     />
 
-                    {editWorkType === "full_time" && (
-                      <>
-                        <LabeledInput
-                          label="Mesai Başlangıç"
-                          type="time"
-                          value={editWorkStart}
-                          setValue={setEditWorkStart}
-                        />
-
-                        <LabeledInput
-                          label="Mesai Bitiş"
-                          type="time"
-                          value={editWorkEnd}
-                          setValue={setEditWorkEnd}
-                        />
-                      </>
-                    )}
+                    <LabeledInput
+                      label="Mesai Bitiş"
+                      type="time"
+                      value={editWorkEnd}
+                      setValue={setEditWorkEnd}
+                    />
 
                     <LabeledInput
                       label="Yıllık İzin Gün Sayısı"
@@ -727,74 +598,6 @@ export default function UsersPage() {
                       </div>
                     </div>
                   </div>
-
-                  {editWorkType === "part_time" && (
-                    <div className="rounded-2xl border border-[#E6EEF9] bg-[#F8FBFF] p-3">
-                      <div className="mb-3">
-                        <p className="text-sm font-bold text-slate-800">
-                          Yarı Zamanlı Haftalık Çalışma Tablosu
-                        </p>
-
-                        <p className="mt-1 text-xs text-slate-400">
-                          Çalışacağı günleri işaretleyip her gün için saat aralığını girin.
-                        </p>
-                      </div>
-
-                      <div className="grid gap-2">
-                        {editWeeklySchedule.map((day) => (
-                          <div
-                            key={day.weekday}
-                            className="grid gap-2 rounded-2xl bg-white p-3 md:grid-cols-[150px_1fr_1fr]"
-                          >
-                            <label className="flex items-center gap-2 text-sm font-semibold text-slate-700">
-                              <input
-                                type="checkbox"
-                                checked={day.is_working}
-                                onChange={(event) =>
-                                  updateWeeklyScheduleDay(day.weekday, {
-                                    is_working: event.target.checked,
-                                    start_time: event.target.checked
-                                      ? day.start_time || "09:00"
-                                      : null,
-                                    end_time: event.target.checked
-                                      ? day.end_time || "18:00"
-                                      : null,
-                                  })
-                                }
-                                className="h-4 w-4 rounded border-slate-300"
-                              />
-
-                              {weekDays[day.weekday]}
-                            </label>
-
-                            <input
-                              type="time"
-                              value={day.start_time || ""}
-                              disabled={!day.is_working}
-                              onChange={(event) =>
-                                updateWeeklyScheduleDay(day.weekday, {
-                                  start_time: event.target.value,
-                                })
-                              }
-                              className="h-11 rounded-2xl border border-[#E6EEF9] bg-white px-4 text-sm text-slate-700 outline-none transition disabled:bg-slate-50 disabled:text-slate-300 focus:border-sky-400 focus:ring-4 focus:ring-sky-100"
-                            />
-
-                            <input
-                              type="time"
-                              value={day.end_time || ""}
-                              disabled={!day.is_working}
-                              onChange={(event) =>
-                                updateWeeklyScheduleDay(day.weekday, {
-                                  end_time: event.target.value,
-                                })
-                              }
-                              className="h-11 rounded-2xl border border-[#E6EEF9] bg-white px-4 text-sm text-slate-700 outline-none transition disabled:bg-slate-50 disabled:text-slate-300 focus:border-sky-400 focus:ring-4 focus:ring-sky-100"
-                            />
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
 
                   <div className="flex flex-col gap-3 sm:flex-row">
                     <button
@@ -1009,7 +812,8 @@ export default function UsersPage() {
                             </td>
 
                             <td className="p-4 text-slate-600">
-                              {workSummary(user)}
+                              {user.work_start_time?.slice(0, 5) || "-"} /{" "}
+                              {user.work_end_time?.slice(0, 5) || "-"}
                             </td>
 
                             <td className="p-4 text-slate-600">
@@ -1087,7 +891,10 @@ export default function UsersPage() {
                         <div className="space-y-2 rounded-2xl bg-white p-3 text-sm text-slate-600">
                           <p>Konum: {user.position || "-"}</p>
                           <p>Rol: {roleLabel(user.role)}</p>
-                          <p>Mesai: {workSummary(user)}</p>
+                          <p>
+                            Mesai: {user.work_start_time?.slice(0, 5) || "-"}{" "}
+                            / {user.work_end_time?.slice(0, 5) || "-"}
+                          </p>
                           <p>Yıllık izin: {user.annual_leave_days || 0} gün</p>
                         </div>
 
