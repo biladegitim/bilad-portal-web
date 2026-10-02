@@ -316,8 +316,16 @@ export default function UsersPage() {
         }
       );
 
-      if (!roleResponse.ok || !orgResponse.ok || !workResponse.ok || !annualLeaveResponse.ok) {
-        alert("Kullanıcı güncellenemedi. Backend endpointlerini kontrol edin.");
+      const failedResponse = [
+        roleResponse,
+        orgResponse,
+        workResponse,
+        annualLeaveResponse,
+      ].find((response) => !response.ok);
+
+      if (failedResponse) {
+        const errorData = await failedResponse.json().catch(() => null);
+        alert(errorData?.detail || "Kullanıcı güncellenemedi.");
         return;
       }
 
