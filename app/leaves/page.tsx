@@ -126,6 +126,48 @@ function isArchivedLeave(leave: LeaveItem) {
   return endDay < todayDay;
 }
 
+function getArchiveMonthKey(leave: LeaveItem) {
+  const end = new Date(leave.end_time);
+
+  if (Number.isNaN(end.getTime())) return "unknown";
+
+  return `${end.getFullYear()}-${String(end.getMonth() + 1).padStart(2, "0")}`;
+}
+
+function formatArchiveMonthTitle(monthKey: string) {
+  if (monthKey === "unknown") return "Tarihi belirsiz";
+
+  const [year, month] = monthKey.split("-").map(Number);
+
+  return new Intl.DateTimeFormat("tr-TR", {
+    month: "long",
+    year: "numeric",
+  }).format(new Date(year, month - 1, 1));
+}
+
+function groupArchivedLeavesByMonth(leaves: LeaveItem[]) {
+  const groups = new Map<string, LeaveItem[]>();
+
+  leaves
+    .slice()
+    .sort(
+      (first, second) =>
+        new Date(second.end_time).getTime() - new Date(first.end_time).getTime()
+    )
+    .forEach((leave) => {
+      const monthKey = getArchiveMonthKey(leave);
+      const group = groups.get(monthKey) || [];
+      group.push(leave);
+      groups.set(monthKey, group);
+    });
+
+  return Array.from(groups.entries()).map(([monthKey, items]) => ({
+    monthKey,
+    title: formatArchiveMonthTitle(monthKey),
+    items,
+  }));
+}
+
 export default function LeavesPage() {
   const router = useRouter();
 
@@ -151,6 +193,7 @@ export default function LeavesPage() {
   const isWeeklyHalfDay = isWeeklyLeave && weeklyLeavePeriod !== "full_day";
   const activeTeamLeaves = teamLeaves.filter((leave) => !isArchivedLeave(leave));
   const archivedTeamLeaves = teamLeaves.filter(isArchivedLeave);
+  const archivedLeaveGroups = groupArchivedLeavesByMonth(archivedTeamLeaves);
 
   const fetchLeaves = useCallback(async () => {
     try {
@@ -836,16 +879,34 @@ export default function LeavesPage() {
                   </span>
                 </div>
 
-                <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
-                  {archivedTeamLeaves.map((leave) => (
-                    <LeaveCard
-                      key={leave.id}
-                      leave={leave}
-                      statusLabel={statusLabel}
-                      statusClass={statusClass}
-                      admin
-                      onDelete={() => deleteLeave(leave.id)}
-                    />
+                <div className="space-y-5">
+                  {archivedLeaveGroups.map((group) => (
+                    <div
+                      key={group.monthKey}
+                      className="rounded-2xl border border-[#E6EEF9] bg-[#F8FBFF] p-3 md:p-4"
+                    >
+                      <div className="mb-3 flex items-center justify-between gap-3">
+                        <h3 className="text-sm font-bold capitalize text-[#10233F] md:text-base">
+                          {group.title}
+                        </h3>
+                        <span className="rounded-full bg-white px-3 py-1 text-xs font-semibold text-slate-500 shadow-sm">
+                          {group.items.length} izin
+                        </span>
+                      </div>
+
+                      <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
+                        {group.items.map((leave) => (
+                          <LeaveCard
+                            key={leave.id}
+                            leave={leave}
+                            statusLabel={statusLabel}
+                            statusClass={statusClass}
+                            admin
+                            onDelete={() => deleteLeave(leave.id)}
+                          />
+                        ))}
+                      </div>
+                    </div>
                   ))}
                 </div>
               </section>
