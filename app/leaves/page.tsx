@@ -22,6 +22,8 @@ type LeaveItem = {
   leave_period?: string | null;
   day_count: number;
   status: string;
+  report_available?: boolean;
+  can_view_report?: boolean;
 };
 
 type AnnualLeaveBalance = {
@@ -51,7 +53,7 @@ type LeavePanel = "annual" | "team" | "archive" | "mine";
 const leaveTypeOptions = [
   { value: "annual", label: "Yıllık izin", description: "Yıllık hakkınızdan düşer" },
   { value: "weekly", label: "Haftalık izin", description: "Otomatik onaylanır" },
-  { value: "report", label: "Rapor", description: "Otomatik onaylanır" },
+  { value: "report", label: "Rapor", description: "Belge yükleyin, süper admin onaylasın" },
   { value: "excuse", label: "Mazeret", description: "Onaya gönderilir" },
 ];
 
@@ -184,6 +186,8 @@ export default function LeavesPage() {
   const [startTime, setStartTime] = useState("");
   const [endTime, setEndTime] = useState("");
   const [reason, setReason] = useState("");
+  const [reportFile, setReportFile] = useState<File | null>(null);
+  const [submitting, setSubmitting] = useState(false);
   const [leaveType, setLeaveType] = useState("");
   const [weeklyLeavePeriod, setWeeklyLeavePeriod] = useState<"full_day" | "morning" | "afternoon">("full_day");
   const [activePanel, setActivePanel] = useState<LeavePanel | null>(null);
@@ -314,6 +318,11 @@ export default function LeavesPage() {
 
   async function handleCreateLeave(e: React.FormEvent) {
     e.preventDefault();
+    if (submitting) return;
+    if (leaveType === "report" && !reportFile) {
+      alert("Rapor izni için rapor belgesi yükleyin");
+      return;
+    }
 
     if (!leaveType) {
       alert("Lütfen izin türü seçin");
@@ -377,30 +386,52 @@ export default function LeavesPage() {
       }
     }
 
-    const response = await apiFetch("/leave-requests", {
-      method: "POST",
-      headers: jsonAuthHeaders(),
-      body: JSON.stringify({
+    setSubmitting(true);
+    try {
+      const payload = {
         start_time: requestStartTime,
         end_time: requestEndTime,
         reason: isExcuseLeave ? reason : null,
         leave_type: leaveType,
         leave_period: isWeeklyLeave ? weeklyLeavePeriod : null,
-      }),
-    });
+      };
+      let response: Response;
+      if (leaveType === "report" && reportFile) {
+        if (reportFile.size > 10 * 1024 * 1024) {
+          alert("Rapor en fazla 10 MB olabilir");
+          return;
+        }
+        const formData = new FormData();
+        formData.append("start_time", requestStartTime);
+        formData.append("end_time", requestEndTime);
+        formData.append("file", reportFile);
+        response = await apiFetch("/report-leave-requests", {
+          method: "POST", headers: authHeaders(), body: formData,
+        });
+      } else {
+        response = await apiFetch("/leave-requests", {
+          method: "POST", headers: jsonAuthHeaders(), body: JSON.stringify(payload),
+        });
+      }
 
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => null);
-      alert(errorData?.detail || "İzin oluşturulamadı");
-      return;
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => null);
+        alert(errorData?.detail || "İzin oluşturulamadı");
+        return;
+      }
+
+      setStartTime("");
+      setEndTime("");
+      setReason("");
+      setReportFile(null);
+      setLeaveType("");
+      setWeeklyLeavePeriod("full_day");
+      await fetchLeaves();
+    } catch {
+      alert("Talep gönderilemedi. Bağlantınızı kontrol edip tekrar deneyin.");
+    } finally {
+      setSubmitting(false);
     }
-
-    setStartTime("");
-    setEndTime("");
-    setReason("");
-    setLeaveType("");
-    setWeeklyLeavePeriod("full_day");
-    fetchLeaves();
   }
 
   async function updateLeaveStatus(
@@ -512,7 +543,9 @@ export default function LeavesPage() {
                       description={
                         isExcuseLeave
                           ? "Mazeret için saat aralığı ve açıklama girin."
-                          : "Tarih aralığını seçin; bu izin türü otomatik onaylanır."
+                          : leaveType === "report"
+                            ? "Raporunuzu yükleyin; talebiniz süper admin onayına gönderilir."
+                            : "Tarih aralığını seçin; bu izin türü otomatik onaylanır."
                       }
                     />
 
@@ -652,6 +685,24 @@ export default function LeavesPage() {
                     )}
                   </div>
 
+                  {leaveType === "report" && (
+                    <div className="lg:col-span-2">
+                      <label htmlFor="report-document" className="mb-1.5 block text-xs font-semibold text-slate-500">
+                        Rapor belgesi (zorunlu)
+                      </label>
+                      <input
+                        id="report-document"
+                        type="file"
+                        accept=".pdf,.jpg,.jpeg,.png"
+                        required
+                        onChange={(event) => setReportFile(event.target.files?.[0] || null)}
+                        className="w-full min-w-0 rounded-2xl border border-[#E6EEF9] bg-[#F8FBFF] p-3 text-sm text-slate-700 file:mr-3 file:rounded-xl file:border-0 file:bg-sky-100 file:px-3 file:py-2 file:text-sky-700"
+                      />
+                      <p className="mt-2 text-xs text-slate-500">
+                        PDF, JPG veya PNG; en fazla 10 MB. Belgeyi siz ve süper adminler görüntüleyebilir.
+                      </p>
+                    </div>
+                  )}
                   {isExcuseLeave && (
                     <div className="lg:col-span-2">
                       <label className="mb-1.5 block text-xs font-semibold text-slate-500">
@@ -671,9 +722,10 @@ export default function LeavesPage() {
 
                 <button
                   type="submit"
+                  disabled={submitting}
                   className="h-11 w-full rounded-2xl bg-sky-600 px-6 text-sm font-semibold text-white shadow-sm transition hover:bg-sky-700 md:w-auto"
                 >
-                  İzin Talebi Oluştur
+                  {submitting ? "Gönderiliyor..." : "İzin Talebi Oluştur"}
                 </button>
               </form>
             </section>
@@ -846,9 +898,9 @@ export default function LeavesPage() {
                       statusLabel={statusLabel}
                       statusClass={statusClass}
                       admin
-                      onApprove={() => updateLeaveStatus(leave.id, "approve")}
-                      onReject={() => updateLeaveStatus(leave.id, "reject")}
-                      onDelete={() => deleteLeave(leave.id)}
+                      onApprove={leave.leave_type !== "report" || isSuperAdmin ? () => updateLeaveStatus(leave.id, "approve") : undefined}
+                      onReject={leave.leave_type !== "report" || isSuperAdmin ? () => updateLeaveStatus(leave.id, "reject") : undefined}
+                      onDelete={leave.leave_type !== "report" || isSuperAdmin ? () => deleteLeave(leave.id) : undefined}
                     />
                   ))}
                 </div>
@@ -902,7 +954,7 @@ export default function LeavesPage() {
                             statusLabel={statusLabel}
                             statusClass={statusClass}
                             admin
-                            onDelete={() => deleteLeave(leave.id)}
+                            onDelete={leave.leave_type !== "report" || isSuperAdmin ? () => deleteLeave(leave.id) : undefined}
                           />
                         ))}
                       </div>
@@ -1021,6 +1073,29 @@ function PanelButton({
   );
 }
 
+async function downloadLeaveReport(leave: LeaveItem) {
+  try {
+    const response = await apiFetch(`/leave-requests/${leave.id}/report`, { headers: authHeaders() });
+    if (!response.ok) {
+      const error = await response.json().catch(() => null);
+      alert(error?.detail || "Rapor indirilemedi");
+      return;
+    }
+    const blob = await response.blob();
+    const extension = blob.type === "application/pdf" ? "pdf" : blob.type === "image/png" ? "png" : "jpg";
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `rapor-${leave.id}.${extension}`;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    window.setTimeout(() => URL.revokeObjectURL(url), 60000);
+  } catch {
+    alert("Rapor indirilemedi. Bağlantınızı kontrol edin.");
+  }
+}
+
 function LeaveCard({
   leave,
   statusLabel,
@@ -1068,6 +1143,15 @@ function LeaveCard({
         </span>
       </div>
 
+      {leave.report_available && leave.can_view_report && (
+        <button type="button" onClick={() => downloadLeaveReport(leave)}
+          className="mt-2 w-full rounded-2xl border border-sky-200 bg-white px-4 py-3 text-sm font-semibold text-sky-700 sm:w-auto">
+          Raporu indir
+        </button>
+      )}
+      {leave.leave_type === "report" && leave.status === "pending" && (
+        <p className="mt-2 text-xs text-slate-500">Süper admin onayı bekleniyor.</p>
+      )}
       {leave.reason && (
         <p className="rounded-2xl bg-white p-3 text-sm leading-6 text-slate-600">
           {leave.reason}
@@ -1076,7 +1160,7 @@ function LeaveCard({
 
       {(admin || onDelete) && (
         <div className="mt-4 grid grid-cols-1 gap-2 sm:grid-cols-3">
-          {admin && leave.status === "pending" && (
+          {admin && onApprove && onReject && leave.status === "pending" && (
             <>
               <button
                 onClick={onApprove}
