@@ -143,31 +143,50 @@ function formatArchiveMonthTitle(monthKey: string) {
 
   return new Intl.DateTimeFormat("tr-TR", {
     month: "long",
-    year: "numeric",
   }).format(new Date(year, month - 1, 1));
 }
 
-function groupArchivedLeavesByMonth(leaves: LeaveItem[]) {
-  const groups = new Map<string, LeaveItem[]>();
+function groupArchivedLeavesByYear(leaves: LeaveItem[]) {
+  const months = new Map<string, LeaveItem[]>();
 
-  leaves
-    .slice()
-    .sort(
-      (first, second) =>
-        new Date(second.end_time).getTime() - new Date(first.end_time).getTime()
-    )
-    .forEach((leave) => {
-      const monthKey = getArchiveMonthKey(leave);
-      const group = groups.get(monthKey) || [];
-      group.push(leave);
-      groups.set(monthKey, group);
+  leaves.forEach((leave) => {
+    const monthKey = getArchiveMonthKey(leave);
+    const items = months.get(monthKey) || [];
+    items.push(leave);
+    months.set(monthKey, items);
+  });
+
+  const years = new Map<string, {
+    yearKey: string;
+    title: string;
+    count: number;
+    months: { monthKey: string; title: string; items: LeaveItem[] }[];
+  }>();
+
+  Array.from(months.entries())
+    .sort(([first], [second]) => second.localeCompare(first))
+    .forEach(([monthKey, items]) => {
+      const yearKey = monthKey === "unknown" ? "unknown" : monthKey.split("-")[0];
+      const year = years.get(yearKey) || {
+        yearKey,
+        title: yearKey === "unknown" ? "Tarihi belirsiz" : yearKey,
+        count: 0,
+        months: [],
+      };
+      year.months.push({
+        monthKey,
+        title: formatArchiveMonthTitle(monthKey),
+        items: items.slice().sort((first, second) =>
+          new Date(first.start_time).getTime() - new Date(second.start_time).getTime()
+          || new Date(first.end_time).getTime() - new Date(second.end_time).getTime()
+          || first.id - second.id
+        ),
+      });
+      year.count += items.length;
+      years.set(yearKey, year);
     });
 
-  return Array.from(groups.entries()).map(([monthKey, items]) => ({
-    monthKey,
-    title: formatArchiveMonthTitle(monthKey),
-    items,
-  }));
+  return Array.from(years.values());
 }
 
 export default function LeavesPage() {
@@ -197,7 +216,7 @@ export default function LeavesPage() {
   const isWeeklyHalfDay = isWeeklyLeave && weeklyLeavePeriod !== "full_day";
   const activeTeamLeaves = teamLeaves.filter((leave) => !isArchivedLeave(leave));
   const archivedTeamLeaves = teamLeaves.filter(isArchivedLeave);
-  const archivedLeaveGroups = groupArchivedLeavesByMonth(archivedTeamLeaves);
+  const archivedLeaveGroups = groupArchivedLeavesByYear(archivedTeamLeaves);
 
   const fetchLeaves = useCallback(async () => {
     try {
@@ -931,34 +950,55 @@ export default function LeavesPage() {
                   </span>
                 </div>
 
-                <div className="space-y-5">
-                  {archivedLeaveGroups.map((group) => (
-                    <div
-                      key={group.monthKey}
-                      className="rounded-2xl border border-[#E6EEF9] bg-[#F8FBFF] p-3 md:p-4"
+                <div className="space-y-3">
+                  {archivedLeaveGroups.map((year) => (
+                    <details
+                      key={year.yearKey}
+                      className="group/year rounded-2xl border border-[#E6EEF9] bg-[#F8FBFF]"
                     >
-                      <div className="mb-3 flex items-center justify-between gap-3">
-                        <h3 className="text-sm font-bold capitalize text-[#10233F] md:text-base">
-                          {group.title}
-                        </h3>
-                        <span className="rounded-full bg-white px-3 py-1 text-xs font-semibold text-slate-500 shadow-sm">
-                          {group.items.length} izin
+                      <summary className="flex cursor-pointer list-none items-center justify-between gap-3 rounded-2xl p-4 outline-none focus-visible:ring-2 focus-visible:ring-sky-400 [&::-webkit-details-marker]:hidden">
+                        <span className="text-sm font-bold text-[#10233F] md:text-base">
+                          {year.title}
                         </span>
-                      </div>
+                        <span className="flex shrink-0 items-center gap-3">
+                          <span className="rounded-full bg-white px-3 py-1 text-xs font-semibold text-slate-500 shadow-sm">
+                            {year.count} izin
+                          </span>
+                          <span aria-hidden="true" className="text-xl text-slate-500 transition-transform group-open/year:rotate-90">›</span>
+                        </span>
+                      </summary>
 
-                      <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
-                        {group.items.map((leave) => (
-                          <LeaveCard
-                            key={leave.id}
-                            leave={leave}
-                            statusLabel={statusLabel}
-                            statusClass={statusClass}
-                            admin
-                            onDelete={leave.leave_type !== "report" || isSuperAdmin ? () => deleteLeave(leave.id) : undefined}
-                          />
+                      <div className="space-y-3 px-3 pb-3 md:px-4 md:pb-4">
+                        {year.months.map((month) => (
+                          <details key={month.monthKey} className="group/month rounded-2xl border border-[#E6EEF9] bg-white">
+                            <summary className="flex cursor-pointer list-none items-center justify-between gap-3 rounded-2xl p-3 outline-none focus-visible:ring-2 focus-visible:ring-sky-400 md:p-4 [&::-webkit-details-marker]:hidden">
+                              <span className="text-sm font-semibold capitalize text-[#10233F]">
+                                {month.title}
+                              </span>
+                              <span className="flex shrink-0 items-center gap-3">
+                                <span className="rounded-full bg-[#F8FBFF] px-3 py-1 text-xs font-semibold text-slate-500">
+                                  {month.items.length} izin
+                                </span>
+                                <span aria-hidden="true" className="text-xl text-slate-500 transition-transform group-open/month:rotate-90">›</span>
+                              </span>
+                            </summary>
+
+                            <div className="grid grid-cols-1 gap-4 px-3 pb-3 md:px-4 md:pb-4 xl:grid-cols-2">
+                              {month.items.map((leave) => (
+                                <LeaveCard
+                                  key={leave.id}
+                                  leave={leave}
+                                  statusLabel={statusLabel}
+                                  statusClass={statusClass}
+                                  admin
+                                  onDelete={leave.leave_type !== "report" || isSuperAdmin ? () => deleteLeave(leave.id) : undefined}
+                                />
+                              ))}
+                            </div>
+                          </details>
                         ))}
                       </div>
-                    </div>
+                    </details>
                   ))}
                 </div>
               </section>
