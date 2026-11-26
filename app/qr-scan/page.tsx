@@ -8,7 +8,16 @@ import { Html5Qrcode, Html5QrcodeScannerState } from "html5-qrcode";
 import { apiFetch } from "@/lib/api";
 import { getAccessToken, jsonAuthHeaders } from "@/lib/auth";
 
-import { getOrCreateDeviceId, isDeviceBindingError, beginDeviceMigration, DEVICE_HELP } from "@/lib/device";
+function getOrCreateDeviceId() {
+  let deviceId = localStorage.getItem("device_id");
+
+  if (!deviceId) {
+    deviceId = crypto.randomUUID();
+    localStorage.setItem("device_id", deviceId);
+  }
+
+  return deviceId;
+}
 
 function getDeviceName() {
   const userAgentData = (
@@ -220,13 +229,6 @@ export default function QRScanPage() {
               const data = await response.json();
 
               if (!response.ok) {
-                if (isDeviceBindingError(response.status, data.detail)) {
-                  await stopScannerSafely();
-                  if (beginDeviceMigration()) return;
-                  setSuccess(false);
-                  setMessage(DEVICE_HELP);
-                  return;
-                }
                 setSuccess(false);
                 setMessage(
                   data.detail || "QR okutma başarısız."

@@ -10,7 +10,6 @@ export default function QrRoleGuard() {
   const router = useRouter();
 
   useEffect(() => {
-    if (pathname === "/device-transfer") return;
     if (!getAccessToken()) return;
     const role = getStoredUserRole();
 
