@@ -131,13 +131,16 @@ export default function RoomsPage() {
   const [rooms, setRooms] = useState<Room[]>([]);
   const [weeklySchedule, setWeeklySchedule] = useState<Record<string, Reservation[]>>({});
   const [pendingReservations, setPendingReservations] = useState<Reservation[]>([]);
+  const [activeReservations, setActiveReservations] = useState<Reservation[]>([]);
+  const [activeError, setActiveError] = useState(false);
+  const [activeSearch, setActiveSearch] = useState("");
   const [archivedReservations, setArchivedReservations] = useState<Reservation[]>([]);
   const [loading, setLoading] = useState(true);
   const [isSuperAdmin, setIsSuperAdmin] = useState(false);
   const [canReviewRoomRequests, setCanReviewRoomRequests] = useState(false);
   const [isVolunteer, setIsVolunteer] = useState(false);
   const [profile, setProfile] = useState<ProfileData | null>(null);
-  const [openPanel, setOpenPanel] = useState<"rooms" | "roomList" | "request" | "pending" | "archive" | null>(null);
+  const [openPanel, setOpenPanel] = useState<"rooms" | "roomList" | "request" | "pending" | "archive" | "active" | null>(null);
 
   const [roomName, setRoomName] = useState("");
   const [roomDescription, setRoomDescription] = useState("");
@@ -276,6 +279,21 @@ export default function RoomsPage() {
         setPendingReservations([]);
       }
 
+      setActiveError(false);
+      if (canManage) {
+        try {
+          const activeRes = await apiFetch("/room-reservations/active", { headers: authHeaders() });
+          if (!activeRes.ok) throw new Error("Active programs unavailable");
+          const activeData = await activeRes.json();
+          setActiveReservations(activeData.reservations || []);
+        } catch {
+          setActiveReservations([]);
+          setActiveError(true);
+        }
+      } else {
+        setActiveReservations([]);
+      }
+
       if (canReview) {
         const archiveRes = await apiFetch("/room-reservations/archive", {
           headers: authHeaders(),
@@ -291,6 +309,8 @@ export default function RoomsPage() {
         setArchivedReservations([]);
       }
     } catch {
+      setActiveReservations([]);
+      setActiveError(true);
       setRooms([]);
       setWeeklySchedule({});
       setPendingReservations([]);
@@ -1090,6 +1110,45 @@ export default function RoomsPage() {
                   </section>
                 )}
 
+                {isSuperAdmin && openPanel === "active" && (
+                  <section className="rounded-2xl border border-[#E6EEF9] bg-white p-4 shadow-sm md:rounded-3xl md:p-5">
+                    <div className="mb-4 flex items-start justify-between gap-3">
+                      <SectionTitle icon="📋" title="Aktif Programlar" description="Onaylanmış, bitiş tarihi geçmemiş ve ileri tarihli programlar." />
+                      <button type="button" onClick={() => setOpenPanel(null)} className="shrink-0 rounded-2xl border border-[#E6EEF9] px-4 py-2 text-sm text-slate-600">Kapat</button>
+                    </div>
+                    {activeError ? (
+                      <div role="alert" className="rounded-2xl bg-red-50 p-4 text-sm text-red-700">
+                        Programlar yüklenemedi.
+                        <button type="button" onClick={() => void fetchData()} className="ml-3 font-semibold underline">Tekrar dene</button>
+                      </div>
+                    ) : (
+                      <>
+                        <label className="mb-4 block text-sm text-slate-600">
+                          Program, mekan veya talep eden kişiye göre ara
+                          <input value={activeSearch} onChange={(event) => setActiveSearch(event.target.value)} type="search" className="mt-2 h-11 w-full rounded-2xl border border-[#E6EEF9] bg-[#F8FBFF] px-4 outline-none focus:border-sky-400" />
+                        </label>
+                        <p className="mb-3 text-sm text-slate-500">{activeReservations.length} aktif program kaydı</p>
+                        <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
+                          {activeReservations.filter((item) => [item.title, item.room_name, item.created_by_name].join(" ").toLocaleLowerCase("tr-TR").includes(activeSearch.trim().toLocaleLowerCase("tr-TR"))).map((reservation) => (
+                            <article key={reservation.reservation_id} className="rounded-2xl border border-[#E6EEF9] bg-[#F8FBFF] p-4">
+                              <h3 className="break-words font-bold text-slate-800">{reservation.title}</h3>
+                              <p className="mt-1 text-sm font-semibold text-sky-700">{reservation.room_name}</p>
+                              <dl className="mt-3 space-y-2 text-sm text-slate-600">
+                                <div><dt className="inline font-semibold">Gün / saat: </dt><dd className="inline">{dayNames[reservation.weekday]} · {reservation.start_time.slice(0, 5)}–{reservation.end_time.slice(0, 5)}</dd></div>
+                                <div><dt className="inline font-semibold">Tarih: </dt><dd className="inline">{formatDate(reservation.start_date)} – {formatDate(reservation.end_date)}</dd></div>
+                                <div><dt className="inline font-semibold">Tekrar: </dt><dd className="inline">{recurrenceLabel(reservation.recurrence_frequency)}</dd></div>
+                                <div><dt className="inline font-semibold">Talep eden: </dt><dd className="inline">{reservation.created_by_name || "Bilinmiyor"}</dd></div>
+                              </dl>
+                              {reservation.description && <p className="mt-3 whitespace-pre-wrap break-words text-sm leading-6 text-slate-500">{reservation.description}</p>}
+                            </article>
+                          ))}
+                        </div>
+                        {!activeReservations.some((item) => [item.title, item.room_name, item.created_by_name].join(" ").toLocaleLowerCase("tr-TR").includes(activeSearch.trim().toLocaleLowerCase("tr-TR"))) && <p className="rounded-2xl bg-[#F8FBFF] p-4 text-sm text-slate-500">{activeReservations.length ? "Aramanıza uygun program bulunamadı." : "Aktif program bulunmuyor."}</p>}
+                      </>
+                    )}
+                  </section>
+                )}
+
                 {canReviewRoomRequests && openPanel === "archive" && (
                   <section className="rounded-2xl border border-[#E6EEF9] bg-white p-4 shadow-sm md:rounded-3xl md:p-5">
                     <div className="mb-4 flex items-center justify-between gap-3">
@@ -1462,6 +1521,10 @@ export default function RoomsPage() {
                           setOpenPanel(openPanel === "pending" ? null : "pending")
                         }
                       />
+                    )}
+
+                    {isSuperAdmin && (
+                      <HeaderActionButton active={openPanel === "active"} label="Aktif Programlar" count={activeReservations.length} countLabel={activeError ? "yüklenemedi" : "program"} onClick={() => setOpenPanel("active")} />
                     )}
 
                     {canReviewRoomRequests && (
